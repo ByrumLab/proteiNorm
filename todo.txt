@@ -1,0 +1,7 @@
+Normalization tab design:
+	- each tab contains comparison plots with log norm (? or should I make it "compare any two") and data table with normalized data
+
+Need to add:
+	- download for plots and data
+	- legend
+	- imputation
