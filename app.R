@@ -12,13 +12,13 @@ library(sva) # combat
 library(shinyjs) # hiding button
 library(rhandsontable) # edibale table
 
-
 source("normFunctions.R")
 source("functions.R")
 
 # Sets maximum upload size to 100MB
 options(shiny.maxRequestSize = 100*1024^2)
 options(stringsAsFactors=FALSE)
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 tweaks <- 
   list(tags$head(tags$style(HTML("
@@ -88,7 +88,7 @@ body <- dashboardBody(
       fluidRow(
         box(
           radioButtons('protMDSColor', 'Color MDS by', choices=c("Group", "Quantity missing"), inline=TRUE)
-          ),
+        ),
         box(
           radioButtons('peptMDSColor', 'Color MDS by', choices=c("Group", "Quantity missing"), inline=TRUE)
         )
@@ -124,7 +124,11 @@ body <- dashboardBody(
             plotOutput("filtPeptMDS")
           )
         )
-      )
+      ),
+      
+      checkboxGroupInput(inputId = "sampleCheckbox", label = "Samples to be removed")
+      # actionButton("updateSampleFilterButton", "Updates Samples"),
+      # textOutput("selected_var")
     ),
     
     
@@ -217,6 +221,7 @@ body <- dashboardBody(
 ui <- dashboardPage(header, sidebar, body)
 
 server <- function(input, output, session) {
+
   peptides <- reactive({
     peptFile <- input$peptFile
     if(is.null(peptFile)) return(NULL)
@@ -277,66 +282,74 @@ server <- function(input, output, session) {
   
   #### Changes the handsontable back into a dataframe ####
   metaData2 <- reactive({
-    hot_to_r(input$metaData) 
-  })
+    hot_to_r(input$metaData)
+  }) 
   
-  normProteins <- reactive({
-    sampleCols = metaData2()$Peptide.Sample.Names
-    proteins <- proteins()[,sampleCols]
-    if(is.null(proteins)) return(NULL)
+  observe({
+    req(peptides())
+    req(proteins())
+    req(metaData1())
+    req(input$metaData)
+    meta = metaData2()
     
-    normList <- vector("list", 8)
-    names(normList) <- c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
-                         "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm")
-    normList[["loggedInt"]] <- logNorm(proteins)
-    normList[["medianNorm"]] <- medianNorm(normList[["loggedInt"]])
-    normList[["meanNorm"]] <- meanNorm(normList[["loggedInt"]])
-    normList[["vsnNorm"]] <- vsnNorm(proteins)
-    normList[["quantNorm"]] <- quantNorm(normList[["loggedInt"]])
-    normList[["cycLoessNorm"]] <- cycLoessNorm(normList[["loggedInt"]])
-    normList[["rlrNorm"]] <- rlrNorm(normList[["loggedInt"]])
-    normList[["giNorm"]] <- giNorm(normList[["loggedInt"]])
-    
-    normList
+    updateCheckboxGroupInput(session, inputId = "sampleCheckbox",
+                             choices = #c("1","2","3")
+                               if(meta$Custom.Sample.Name[1] == ""){
+                                 meta$Peptide.Sample.Names
+                               } else {
+                                 meta$Custom.Sample.Names
+                               }
+    )
   })
   
-  logProteins <- reactive({
-    normList <- normProteins()
-    
-    as.data.table(normList[["loggedInt"]])
-  })
-  
-  output$filtProtTable <- renderDT({
-    logProteins()
-  })
-  
-  output$filtPeptTable <- renderDT({
-    cleanPeptides()
-  })
-  
-  # ---
-  # findDensityCutoff
-  # ---
-  # Finds upper limit of the histogram so each box contains at least cutoffPercent of the data
-  
-  findDensityCutoff <- function(longdat, cutoffPercent = .001) {
-    densityCutoff <- 0
-    newDensityCutoff <- max(longdat, na.rm=TRUE)
-    totalNum <- length(longdat)
-    while(newDensityCutoff != densityCutoff) {
-      densityCutoff <- newDensityCutoff
-      breakSeq <- seq(max(min(longdat, na.rm=TRUE), 0), densityCutoff,
-                      by=(densityCutoff - max(min(longdat, na.rm=TRUE), 0)) / 30)
-      freqs <- hist(longdat[longdat < densityCutoff], breaks = breakSeq, plot=FALSE)
-      newDensityCutoff <- freqs$breaks[which((freqs$counts / totalNum) < cutoffPercent)[1]+1]
+  peptidesSampleFiltered <- reactive({
+    req(peptides())
+    req(metaData1())
+    req(input$metaData)
+    peptides = peptides()
+    meta = metaData2()
+    if(meta$Custom.Sample.Name[1] == ""){
+      filteredPeptides = peptides[,c(TRUE, !meta$Peptide.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep "id"
+    } else {
+      filteredPeptides = peptides[,c(TRUE, !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
     }
-    return(densityCutoff)
-  }
+    filteredPeptides
+  })
+  
+  proteinsSampleFiltered <- reactive({
+    req(proteins())
+    req(metaData1())
+    req(input$metaData)
+    proteins = proteins()
+    meta = metaData2()
+    if(meta$Custom.Sample.Name[1] == ""){
+      filteredProteins = proteins[,c(TRUE, !meta$Peptide.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep "id"
+    } else {
+      filteredProteins = proteins[,c(TRUE, !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
+    }
+    filteredProteins
+  })
+  
+  metaDataFiltered <- reactive({
+    req(proteins())
+    req(metaData1())
+    req(input$metaData)
+    meta = metaData2()
+    if(meta$Custom.Sample.Name[1] == ""){
+      filteredMetadata = meta[!meta$Peptide.Sample.Names %in% input$sampleCheckbox,]
+    } else {
+      filteredMetadata = meta[!meta$Custom.Sample.Names %in% input$sampleCheckbox,]
+    }
+    filteredMetadata
+  })
+
+
+
   
   # Boxplot Proteins
   output$filtProtBoxplot <- renderPlot({
-    proteins <- proteins()
-    meta <- metaData2()
+    proteins <- proteinsSampleFiltered()
+    meta <- metaDataFiltered()
     
     if(is.null(proteins) | is.null(meta)) return(NULL)
     
@@ -354,8 +367,8 @@ server <- function(input, output, session) {
   
   # Boxplot Peptides
   output$filtPeptBoxplot <- renderPlot({
-    peptides <- peptides()
-    meta <- metaData2()
+    peptides <- peptidesSampleFiltered()
+    meta <- metaDataFiltered()
     
     if(is.null(peptides) | is.null(meta)) return(NULL)
     
@@ -373,8 +386,8 @@ server <- function(input, output, session) {
   
   # Histogram Proteins
   output$filtProtHist <- renderPlot({
-    proteins <- proteins()
-    meta <- metaData2()
+    proteins <- proteinsSampleFiltered()
+    meta <- metaDataFiltered()
     
     if(is.null(proteins) | is.null(meta)) return(NULL)
     
@@ -389,8 +402,8 @@ server <- function(input, output, session) {
   
   # Histogram Peptides
   output$filtPeptHist <- renderPlot({
-    peptides <- peptides()
-    meta <- metaData2()
+    peptides <- peptidesSampleFiltered()
+    meta <- metaDataFiltered()
     
     if(is.null(peptides) | is.null(meta)) return(NULL)
     
@@ -405,8 +418,8 @@ server <- function(input, output, session) {
   
   # MDS Proteins
   output$filtProtMDS <- renderPlot({
-    proteins <- proteins()
-    meta <- metaData2()
+    proteins <- proteinsSampleFiltered()
+    meta <- metaDataFiltered()
     
     if(is.null(proteins) | is.null(meta)) return(NULL)
     
@@ -434,8 +447,8 @@ server <- function(input, output, session) {
   
   # MDS Peptides
   output$filtPeptMDS <- renderPlot({
-    peptides <- peptides()
-    meta <- metaData2()
+    peptides <- peptidesSampleFiltered()
+    meta <- metaDataFiltered()
     
     if(is.null(peptides) | is.null(meta)) return(NULL)
     
@@ -460,10 +473,45 @@ server <- function(input, output, session) {
     }
   })
   
+  
+  
+  
+  
+  
+  
+  
+  
+  normProteins <- reactive({
+    sampleCols = metaDataFiltered()$Peptide.Sample.Names
+    proteins <- proteinsSampleFiltered()[,sampleCols]
+    if(is.null(proteins)) return(NULL)
+    
+    normList <- vector("list", 8)
+    names(normList) <- c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
+                         "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm")
+    normList[["loggedInt"]] <- logNorm(proteins)
+    normList[["medianNorm"]] <- medianNorm(normList[["loggedInt"]])
+    normList[["meanNorm"]] <- meanNorm(normList[["loggedInt"]])
+    normList[["vsnNorm"]] <- vsnNorm(proteins)
+    normList[["quantNorm"]] <- quantNorm(normList[["loggedInt"]])
+    normList[["cycLoessNorm"]] <- cycLoessNorm(normList[["loggedInt"]])
+    normList[["rlrNorm"]] <- rlrNorm(normList[["loggedInt"]])
+    normList[["giNorm"]] <- giNorm(normList[["loggedInt"]])
+    
+    normList
+  })
+  
+  
+  
+  
+  
+  
+  
+  
   output$totalIntensity_barplot <- renderPlot({
     normList <- normProteins()
-    meta <- metaData2()
-
+    meta <- metaDataFiltered()
+    
     if(is.null(normList) | is.null(meta)) return(NULL)
     
     par(mfrow = c(3,3), mar=c(4,8,3,1))
@@ -478,7 +526,7 @@ server <- function(input, output, session) {
   
   output$PCV_boxplot <- renderPlot({
     normList <- normProteins()
-    meta <- metaData2()
+    meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
     
     groups <- meta$Group
@@ -495,7 +543,7 @@ server <- function(input, output, session) {
   
   output$PMAD_boxplot <- renderPlot({
     normList <- normProteins()
-    meta <- metaData2()
+    meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
     
     groups <- meta$Group
@@ -513,7 +561,7 @@ server <- function(input, output, session) {
   
   output$PEV_boxplot <- renderPlot({
     normList <- normProteins()
-    meta <- metaData2()
+    meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
     
     groups <- meta$Group
@@ -530,7 +578,7 @@ server <- function(input, output, session) {
   
   output$cor_boxplolt <- renderPlot({
     normList <- normProteins()
-    meta <- metaData2()
+    meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
     
     groups <- meta$Group
@@ -548,7 +596,7 @@ server <- function(input, output, session) {
   output$NA_heatmap <- renderPlot({
     normList <- normProteins()
     
-    meta <- metaData2()
+    meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
     
     groups <- meta$Group
@@ -559,7 +607,7 @@ server <- function(input, output, session) {
   
   output$cor_heatmap <- renderPlot({
     normList <- normProteins()
-    meta <- metaData2()
+    meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
     
     groups <- meta$Group
@@ -570,7 +618,7 @@ server <- function(input, output, session) {
   
   output$logFC_density <- renderPlot({
     normList <- normProteins()
-    meta <- metaData2()
+    meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
     
     groups <- meta$Group
@@ -579,7 +627,7 @@ server <- function(input, output, session) {
   
   shiny::observeEvent(input$goButtonDAtest, {
     normList <- normProteins()
-    meta <- metaData2()
+    meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
     groups <- meta$Group
     batch <- meta$Batch
@@ -602,7 +650,7 @@ server <- function(input, output, session) {
   
   shiny::observeEvent(input$goButtonDAPower, {
     normList <- normProteins()
-    meta <- metaData2()
+    meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
     groups <- meta$Group
     batch <- meta$Batch
