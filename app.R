@@ -76,33 +76,10 @@ body <- dashboardBody(
           shinyjs::hidden(p(id = "textFilteringPeptides", "Processing...")),
           
           fileInput("protFile", "Proteins")
-          # fileInput("metaFile", "Metadata")
         )
       ),
       
-      fluidRow(
-        rHandsontableOutput("metaData")#,
-        
-        # tabBox(
-        #   title="Raw Data (upload to view)", width=12, id="rawdata",
-        #   tabPanel(
-        #     "Peptides",
-        #     div(DTOutput("rawPeptTable"),
-        #         style = "overflow-y: scroll;overflow-x: scroll;")
-        #   ),
-        #   tabPanel(
-        #     "Proteins",
-        #     div(DTOutput("rawProtTable"),
-        #         style = "overflow-y: scroll;overflow-x: scroll;")
-        #   )#,
-        #   # tabPanel(
-        #   #   "Metadata",
-        #   #   div(DTOutput("rawMetaTable"),
-        #   #       style = "overflow-y: scroll;overflow-x: scroll;")
-        #   # )
-        # )
-      ),
-      textOutput("selected_var")
+      fluidRow(rHandsontableOutput("metaData"))
     ),
     
     # Filters
@@ -110,24 +87,10 @@ body <- dashboardBody(
       tabName = "filters",
       fluidRow(
         box(
-      #     title="Proteins",
-      #     uiOutput('protId'),
-      #     checkboxGroupInput('protFilt', "Filter proteins by",
-      #                        choices=c("Count", "Score"), inline=TRUE),
-          radioButtons('protMDSColor', 'Color MDS by',
-                       choices=c("Group", "Quantity missing"), inline=TRUE)
-      #     uiOutput('protCountSlide'),
-      #     uiOutput('protScoreSlide')
-        ),
+          radioButtons('protMDSColor', 'Color MDS by', choices=c("Group", "Quantity missing"), inline=TRUE)
+          ),
         box(
-      #     title="Peptides",
-      #     uiOutput('peptId'),
-      #     checkboxGroupInput('peptFilt', "Filter peptides by",
-      #                        choices=c("Count", "Score"), inline=TRUE),
-          radioButtons('peptMDSColor', 'Color MDS by',
-                       choices=c("Group", "Quantity missing"), inline=TRUE)
-      #     uiOutput('peptCountSlide'),
-      #     uiOutput('peptScoreSlide')
+          radioButtons('peptMDSColor', 'Color MDS by', choices=c("Group", "Quantity missing"), inline=TRUE)
         )
       ),
       fluidRow(
@@ -161,22 +124,7 @@ body <- dashboardBody(
             plotOutput("filtPeptMDS")
           )
         )
-      )#,
-      # fluidRow(
-      #   tabBox(
-      #     title="Cleaned Data", width=12, id="cleandata",
-      #     tabPanel(
-      #       "Proteins",
-      #       div(DTOutput("filtProtTable"),
-      #           style = "overflow-y: scroll;overflow-x: scroll;")
-      #     ),
-      #     tabPanel(
-      #       "Peptides",
-      #       div(DTOutput("filtPeptTable"),
-      #           style = "overflow-y: scroll;overflow-x: scroll;")
-      #     )
-      #   )
-      # )
+      )
     ),
     
     
@@ -308,11 +256,6 @@ server <- function(input, output, session) {
     tmpData[["data"]]
   })
   
-  # meta <- reactive({
-  #   metaFile <- input$metaFile
-  #   if(is.null(metaFile)) return(NULL)
-  #   fread(metaFile$datapath)
-  # })
   
   ### Creates a Dataframe that will be used to edit the metaData ####
   ### Creates handsontable where metaData1() will be edited ####
@@ -334,128 +277,8 @@ server <- function(input, output, session) {
   
   #### Changes the handsontable back into a dataframe ####
   metaData2 <- reactive({
-    # req(peptides())
-    # req(proteins())
     hot_to_r(input$metaData) 
   })
-  
-  
-  # output$rawProtTable <- renderDT({ proteins() })
-  # output$rawPeptTable <- renderDT({ peptides() })
-  # output$rawMetaTable <- renderDT({ meta() }, editable='cell')
-  
-  # output$protId <- renderUI({
-  #   selectInput('protIdCol', 'Numerical ID column in proteins',
-  #               c("Select none to make one"="", "None", names(proteins())),
-  #               selected="None")
-  # })
-  
-  # output$peptId <- renderUI({
-  #   selectInput('peptIdCol', 'Numerical ID column in peptides',
-  #               c("Select none to make one"="", "None", names(peptides())),
-  #               selected="None")
-  # })
-  
-  # scoreFilter <- function(dat, scoreCutoff = 5) {
-  #   dat[dat$score >= scoreCutoff, ]
-  # }
-  
-  # countFilter <- function(dat, meta, countCutoff = 8, numReplicates = 2) {
-  #   dat <- as.data.frame(dat)
-  #   for (group in levels(as.factor(meta$group))) {
-  #     tmp <- meta[meta$group==group, ]
-  #     countCols <- paste0(tmp$sample, ".counts")
-  #     sampleCols <- tmp$sample
-  #     dat[rowSums(dat[countCols]>countCutoff) < numReplicates, sampleCols] = NA
-  #   }
-  #   as.data.table(dat)
-  # }
-  
-  # cleanProteins <- reactive({
-  #   proteins <- proteins()
-  #   meta <- meta()
-  #   
-  #   if(is.null(proteins) | is.null(meta)) return(NULL)
-  #   
-  #   idCol <- input$protIdCol
-  #   if(idCol=="None") {
-  #     proteins <- cbind(proteins, idCol=seq(1, nrow(proteins)))
-  #     idCol <- "idCol"
-  #   }
-  #   
-  #   colNames <- c(paste0("Reporter intensity corrected ", meta$ionNum, " TMT", meta$batch),
-  #                 paste0("Reporter intensity count ", meta$ionNum, " TMT", meta$batch)) 
-  #   tmpNames <- c(idCol, colNames, "Score")
-  #   cleanProt <- proteins[, ..tmpNames]
-  #   colnames(cleanProt) <- c("id", meta$sample, paste0(meta$sample, ".counts"), "score")
-  #   
-  #   # Filters
-  #   if("Score" %in% input$protFilt & !is.null(input$protScoreSlider)) {
-  #     cleanProt <- scoreFilter(cleanProt, scoreCutoff = input$protScoreSlider)
-  #   }
-  #   
-  #   if("Count" %in% input$protFilt & !is.null(input$protCountSlider)) {
-  #     cleanProt <- countFilter(cleanProt, meta, countCutoff = input$protCountSlider)
-  #   }
-  #   
-  #   cleanProt
-  # })
-  
-  # # cleanPeptides <- reactive({
-  #   peptides <- peptides()
-  #   meta <- meta()
-  #   
-  #   if(is.null(peptides) | is.null(meta)) return(NULL)
-  #   
-  #   idCol <- input$peptIdCol
-  #   if(idCol=="None") {
-  #     peptides <- cbind(peptides, idCol=seq(1, nrow(peptides)))
-  #     idCol <- "idCol"
-  #   }
-  #   
-  #   colNames <- c(paste0("Reporter intensity corrected ", meta$ionNum, " TMT", meta$batch),
-  #                 paste0("Reporter intensity count ", meta$ionNum, " TMT", meta$batch)) 
-  #   tmpNames <- c(idCol, colNames, "Score")
-  #   cleanPept <- peptides[, ..tmpNames]
-  #   colnames(cleanPept) <- c("id", meta$sample, paste0(meta$sample, ".counts"), "score")
-  #   
-  #   # Filters
-  #   if("Score" %in% input$peptFilt & !is.null(input$peptScoreSlider)) {
-  #     cleanPept <- scoreFilter(cleanPept, scoreCutoff = input$peptScoreSlider)
-  #   }
-  #   
-  #   if("Count" %in% input$peptFilt & !is.null(input$peptCountSlider)) {
-  #     cleanPept <- countFilter(cleanPept, meta, countCutoff = input$peptCountSlider)
-  #   }
-  #   
-  #   cleanPept
-  # })
-  
-  # wideProteins <- reactive({
-  #   proteins <- cleanProteins()
-  #   meta <- meta()
-  #   
-  #   if(is.null(proteins) | is.null(meta)) return(NULL)
-  #   
-  #   colNames <- meta$sample
-  #   wideProt <- proteins[, ..colNames]
-  #   row.names(wideProt) <- proteins$id
-  #   
-  #   wideProt
-  # })
-  # 
-  # widePeptides <- reactive({
-  #   peptides <- cleanPeptides()
-  #   meta <- meta()
-  #   
-  #   if(is.null(peptides) | is.null(meta)) return(NULL)
-  #   
-  #   colNames <- meta$sample
-  #   widePept <- peptides[, ..colNames]
-  #   row.names(widePept) <- peptides$id
-  #   
-  #   widePept
-  # })
   
   normProteins <- reactive({
     sampleCols = metaData2()$Peptide.Sample.Names
@@ -491,35 +314,11 @@ server <- function(input, output, session) {
     cleanPeptides()
   })
   
-  # output$protCountSlide <- renderUI({
-  #   if("Count" %in% input$protFilt) {
-  #     sliderInput("protCountSlider", "Count Cutoff", 1, 50, value=8)
-  #   }
-  # })
-  # 
-  # output$protScoreSlide <- renderUI({
-  #   if("Score" %in% input$protFilt) {
-  #     sliderInput("protScoreSlider", "Score Cutoff", 1, 100, value=5)
-  #   }
-  # })
-  # 
-  # output$peptCountSlide <- renderUI({
-  #   if("Count" %in% input$peptFilt) {
-  #     sliderInput("peptCountSlider", "Count Cutoff", 1, 50, value=8)
-  #   }
-  # })
-  # 
-  # output$peptScoreSlide <- renderUI({
-  #   if("Score" %in% input$peptFilt) {
-  #     sliderInput("peptScoreSlider", "Score Cutoff", 1, 200, value=5)
-  #   }
-  # })
-  
   # ---
   # findDensityCutoff
   # ---
   # Finds upper limit of the histogram so each box contains at least cutoffPercent of the data
-  #
+  
   findDensityCutoff <- function(longdat, cutoffPercent = .001) {
     densityCutoff <- 0
     newDensityCutoff <- max(longdat, na.rm=TRUE)
@@ -667,13 +466,6 @@ server <- function(input, output, session) {
 
     if(is.null(normList) | is.null(meta)) return(NULL)
     
-    # groups <- meta$group
-    # batch <- meta$batch
-    # peptides = cleanPeptides()
-    # proteins = cleanProteins()
-    # save(normList, groups, batch, meta, peptides, proteins, file = "../../proteiNorm_data.Rdata")
-    # print("data saved")
-    
     par(mfrow = c(3,3), mar=c(4,8,3,1))
     for(i in names(normList)){
       barplot(colSums(normList[[i]], na.rm = T), main = i, las = 2, yaxt="n", cex.main = 1.5, col = plasma(ncol(normList[[i]])))
@@ -756,9 +548,6 @@ server <- function(input, output, session) {
   output$NA_heatmap <- renderPlot({
     normList <- normProteins()
     
-    # peptides <- peptides()
-    # save(peptides, file = "../../proteiNorm_data_peptide.Rdata")
-    # print("Pep saved")
     meta <- metaData2()
     if(is.null(normList) | is.null(meta)) return(NULL)
     
