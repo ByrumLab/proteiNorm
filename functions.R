@@ -1,42 +1,84 @@
-extractPeptideData = function(rawData){
-  isTMT = any(grepl("Reporter\\.intensity\\.corrected\\.[[:digit:]]+", colnames(rawData)))
+extractColumnNames = function(columnNames){
+  # check data type
+  isTMT = any(grepl("Reporter\\.intensity\\.corrected\\.[[:digit:]]+", columnNames))
+  
   if(isTMT){
     ## TMT
     pattern = "Reporter\\.intensity\\.corrected\\.[[:digit:]]+\\.."
-    rawDataCols = grep(pattern, colnames(rawData), value = TRUE)
+    rawDataCols = grep(pattern, columnNames, value = TRUE)
     if(identical(rawDataCols, character(0))){
       pattern = "Reporter\\.intensity\\.corrected\\.[[:digit:]]+"
-      rawDataCols = grep(pattern, colnames(rawData), value = TRUE)
+      rawDataCols = grep(pattern, columnNames, value = TRUE)
     }
-    extractedData = rawData[,c("id", rawDataCols)]
   } else {
     ## Label Free
     pattern = "Intensity\\.[[:digit:]]+"
-    rawDataCols = grep(pattern, colnames(rawData), value = TRUE)
-    extractedData = rawData[,c("id", rawDataCols)]
+    rawDataCols = grep(pattern, columnNames, value = TRUE)
   }
+  
+  return(list(isTMT = isTMT, rawDataCols = rawDataCols))
+}
+
+extractPeptideData = function(rawData){
+  # quality filter 
+  remove = rawData$Reverse == "+" | rawData$Potential.contaminant == "+"
+  rawData = rawData[!remove,]
+  
+  # extract relevant data
+  tmpCol = extractColumnNames(colnames(rawData))
+  isTMT = tmpCol[["isTMT"]]
+  rawDataCols = tmpCol[["rawDataCols"]]
+  extractedData = rawData[,c(peptideAnnotationColums, rawDataCols)]
+  
   return(list(data = extractedData, isTMT = isTMT))
 }
 
 extractProteinData = function(rawData){
-  isTMT = any(grepl("Reporter\\.intensity\\.corrected\\.[[:digit:]]+", colnames(rawData)))
-  if(isTMT){
-    ## TMT
-    pattern = "Reporter\\.intensity\\.corrected\\.[[:digit:]]+\\.."
-    rawDataCols = grep(pattern, colnames(rawData), value = TRUE)
-    if(identical(rawDataCols, character(0))){
-      pattern = "Reporter\\.intensity\\.corrected\\.[[:digit:]]+"
-      rawDataCols = grep(pattern, colnames(rawData), value = TRUE)
-    }
-    extractedData = rawData[,c("id", rawDataCols)]
-  } else {
-    ## Label Free
-    pattern = "iBAQ\\.[[:digit:]]+"
-    rawDataCols = grep(pattern, colnames(rawData), value = TRUE)
-    extractedData = rawData[,c("id", rawDataCols)]
+  # quality filter 
+  if(all(c("Reverse", "Potential.contaminant", "Only.identified.by.site") %in% colnames(rawData))){
+    remove = rawData$Reverse == "+" | rawData$Potential.contaminant == "+" | rawData$Only.identified.by.site == "+"
+    rawData = rawData[!remove,]
   }
+  # extract relevant data
+  tmpCol = extractColumnNames(colnames(rawData))
+  isTMT = tmpCol[["isTMT"]]
+  rawDataCols = tmpCol[["rawDataCols"]]
+  extractedData = rawData[,c(proteinAnnotationColums, rawDataCols)]
   return(list(data = extractedData, isTMT = isTMT))
 }
+
+
+outlier = function(vector){
+  vector < quantile(vector)[2] - 1.5 * IQR(vector) | quantile(vector)[4] + 1.5 * IQR(vector) < vector
+}
+
+
+filterPeptides = function(peptides){
+  peptides = as.data.frame(peptides)
+  # save(peptides, file = "peptidesPreFilter.Rdata")
+  # print("saved")
+  peptides$proteinIDs = unlist(lapply(strsplit(peptides$Protein.group.IDs, ";"), function(x) x[1]))
+  
+  colmnNames = extractColumnNames(colnames(peptides))[["rawDataCols"]]
+  FilteredProteins = NULL
+  for(i in unique(peptides$proteinIDs)){
+    tempProtein = peptides[peptides$proteinIDs == i, colmnNames]
+    if(nrow(tempProtein) == 1){
+      FilteredProteins = rbind(FilteredProteins, tempProtein)
+    } else {
+      tempProtein_log = log2(tempProtein)
+      tempOutliers = apply(tempProtein_log, 2, outlier)
+      keepPeptide = !apply(tempOutliers, 1, any)
+      tempFilteredProtein = colSums(tempProtein[keepPeptide,])
+      FilteredProteins = rbind(FilteredProteins, tempFilteredProtein)
+    }
+  }
+  FilteredProteins = cbind(id = unique(peptides$proteinIDs), FilteredProteins)
+  return(FilteredProteins)
+}
+
+
+
 
 # ---
 # findDensityCutoff
@@ -354,33 +396,6 @@ DAtest = function(normData, groups, batch, imputed, exludedTests){ # will need t
     res <- testDA(data = 2^tempCombat, predictor = predictor, cores = 10, R = 1, relative = FALSE, tests = performTests)
     return(res)
   } 
-}
-
-outlier = function(vector){
-  vector < quantile(vector)[2] - 1.5 * IQR(vector) | quantile(vector)[4] + 1.5 * IQR(vector) < vector
-}
-
-
-filterPeptides = function(peptides){
-  peptides = as.data.frame(peptides)
-  peptides$proteinIDs = unlist(lapply(strsplit(peptides$`Protein group IDs`, ";"), function(x) x[1]))
-  
-  FilteredProteins = NULL
-  for(i in unique(peptides$proteinIDs)){
-    tempProtein = peptides[peptides$proteinIDs == i, c(paste("Reporter intensity corrected ", 1:10, " TMT", batch, sep = ""))]
-    if(nrow(tempProtein) == 1){
-      FilteredProteins = rbind(FilteredProteins, tempProtein)
-    } else {
-      tempProtein_log = log2(tempProtein)
-      tempOutliers = apply(tempProtein_log, 2, outlier)
-      keepPeptide = !apply(tempOutliers, 1, any)
-      tempFilteredProtein = colSums(tempProtein[keepPeptide,])
-      FilteredProteins = rbind(FilteredProteins, tempFilteredProtein)
-    }
-  }
-  # rownames(FilteredProteins) = unique(peptides$proteinIDs)
-  FilteredProteins = cbind(ID = unique(peptides$proteinIDs), FilteredProteins)
-  return(FilteredProteins)
 }
 
 

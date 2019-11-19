@@ -20,6 +20,9 @@ options(shiny.maxRequestSize = 100*1024^2)
 options(stringsAsFactors=FALSE)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
+peptideAnnotationColums = c("id", "Protein.group.IDs")
+proteinAnnotationColums = c("id")
+
 tweaks <- 
   list(tags$head(tags$style(HTML("
                                  .multicol { 
@@ -225,11 +228,10 @@ server <- function(input, output, session) {
   peptides <- reactive({
     peptFile <- input$peptFile
     if(is.null(peptFile)) return(NULL)
-    # fread(peptFile$datapath)
-    
+
     tmpRawData = data.frame(fread(peptFile$datapath))
     tmpData = extractPeptideData(rawData = tmpRawData)
-    ifelse(tmpData[["isTMT"]], print("Peptides: TMT detected"), print("Peptides: Label-Free detected"))
+    ifelse(tmpData[["isTMT"]], cat("Peptides: TMT detected\n"), cat("Peptides: Label-Free detected\n"))
     tmpData[["data"]]
   })
   
@@ -244,8 +246,11 @@ server <- function(input, output, session) {
     peptides = peptides()
     cat("Filtering peptides (can take a few minutes) ...")
     filteredProteins = filterPeptides(peptides)
+    
+    # print(input$peptFile$datapath)
+    
     write.table(filteredProteins, file = input$saveProteinFilename, sep = "\t", row.names = F) #, col.names=NA
-    cat("done\n")
+    cat(" done\n")
     shinyjs::enable("saveButton")
     shinyjs::hide("textFilteringPeptides")
   })
@@ -253,11 +258,10 @@ server <- function(input, output, session) {
   proteins <- reactive({
     protFile <- input$protFile
     if(is.null(protFile)) return(NULL)
-    # fread(protFile$datapath)
-    
+
     tmpRawData = data.frame(fread(protFile$datapath))
     tmpData = extractProteinData(rawData = tmpRawData)
-    ifelse(tmpData[["isTMT"]], print("Proteins: TMT detected"), print("Proteins: Label-Free detected"))
+    ifelse(tmpData[["isTMT"]], cat("Proteins: TMT detected\n"), cat("Proteins: Label-Free detected\n"))
     tmpData[["data"]]
   })
   
@@ -267,8 +271,8 @@ server <- function(input, output, session) {
   metaData1 <- reactive({
     req(peptides())
     req(proteins())
-    tempTable = data.frame(Peptide.Sample.Names = colnames(peptides())[-1],
-                           Protein.Sample.Names = colnames(proteins())[-1],
+    tempTable = data.frame(Peptide.Sample.Names = colnames(peptides())[-seq_along(peptideAnnotationColums)],
+                           Protein.Sample.Names = colnames(proteins())[-seq_along(proteinAnnotationColums)],
                            Custom.Sample.Names = "",
                            Group = "",
                            Batch = "")
@@ -309,9 +313,9 @@ server <- function(input, output, session) {
     peptides = peptides()
     meta = metaData2()
     if(meta$Custom.Sample.Name[1] == ""){
-      filteredPeptides = peptides[,c(TRUE, !meta$Peptide.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep "id"
+      filteredPeptides = peptides[,c(rep(TRUE, length(peptideAnnotationColums)), !meta$Peptide.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep annotation
     } else {
-      filteredPeptides = peptides[,c(TRUE, !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
+      filteredPeptides = peptides[,c(rep(TRUE, length(peptideAnnotationColums)), !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
     }
     filteredPeptides
   })
@@ -323,9 +327,9 @@ server <- function(input, output, session) {
     proteins = proteins()
     meta = metaData2()
     if(meta$Custom.Sample.Name[1] == ""){
-      filteredProteins = proteins[,c(TRUE, !meta$Peptide.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep "id"
+      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), !meta$Peptide.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep annotation
     } else {
-      filteredProteins = proteins[,c(TRUE, !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
+      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
     }
     filteredProteins
   })
