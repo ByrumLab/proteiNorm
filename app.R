@@ -21,8 +21,6 @@ options(shiny.maxRequestSize = 100*1024^2)
 options(stringsAsFactors=FALSE)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-peptideAnnotationColums = c("id", "Protein.group.IDs")
-proteinAnnotationColums = c("id")
 
 tweaks <- 
   list(tags$head(tags$style(HTML("
@@ -194,7 +192,8 @@ body <- dashboardBody(
                     c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
                       "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm")),
         selectInput("imputationMethod", "Imputation Method:", 
-                    c("No Imputation", "KNN", "QRILC", "MinDet", "MinProb", "min", "zero"))
+                    c("No Imputation", "KNN", "QRILC", "MinDet", "MinProb", "min", "zero")),
+        shinySaveButton("saveNormProtein", "Save file", "Save file as ...", filetype=list(txt="txt"))
       )),
       
       tweaks,
@@ -229,35 +228,19 @@ body <- dashboardBody(
 ui <- dashboardPage(header, sidebar, body)
 
 server <- function(input, output, session) {
-
+  peptideAnnotationColums = c("id", "Protein.group.IDs")
+  proteinAnnotationColums = c("id")
+  
   peptides <- reactive({
     peptFile <- input$peptFile
     if(is.null(peptFile)) return(NULL)
     
     tmpRawData = data.frame(fread(peptFile$datapath))
-    tmpData = extractPeptideData(rawData = tmpRawData)
+    tmpData = extractPeptideData(rawData = tmpRawData, peptideAnnotationColums = peptideAnnotationColums)
     cat(ifelse(tmpData[["isTMT"]], "Peptides: TMT detected\n", "Peptides: Label-Free detected\n"))
     tmpData[["data"]]
   })
   
-  # observeEvent(input$saveButton, {
-  #   validate(
-  #     need(input$saveProteinFilename != "", message="Please enter a valid filename")
-  #   )
-  #   
-  #   shinyjs::disable("saveButton")
-  #   shinyjs::show("textFilteringPeptides")
-  #   
-  #   peptides = peptides()
-  #   cat("Filtering peptides (can take a few minutes) ...")
-  #   filteredProteins = filterPeptides(peptides)
-  #   
-  #   
-  #   write.table(filteredProteins, file = input$saveProteinFilename, sep = "\t", row.names = F) #, col.names=NA
-  #   cat(" done\n")
-  #   shinyjs::enable("saveButton")
-  #   shinyjs::hide("textFilteringPeptides")
-  # })
   
   observe({
     volumes <- c("UserFolder" = getwd())
@@ -281,9 +264,9 @@ server <- function(input, output, session) {
   proteins <- reactive({
     protFile <- input$protFile
     if(is.null(protFile)) return(NULL)
-
+    
     tmpRawData = data.frame(fread(protFile$datapath))
-    tmpData = extractProteinData(rawData = tmpRawData)
+    tmpData = extractProteinData(rawData = tmpRawData, proteinAnnotationColums = proteinAnnotationColums)
     cat(ifelse(tmpData[["isTMT"]], "Proteins: TMT detected\n", "Proteins: Label-Free detected\n"))
     tmpData[["data"]]
   })
@@ -369,9 +352,9 @@ server <- function(input, output, session) {
     }
     filteredMetadata
   })
-
-
-
+  
+  
+  
   
   # Boxplot Proteins
   output$filtProtBoxplot <- renderPlot({
@@ -669,6 +652,21 @@ server <- function(input, output, session) {
     groups <- meta$Group
     densityLogFC(normList, groups)
   })
+  
+  # observeEvent(input$saveNormProtein, {
+  #   normList <- normProteins()
+  #   meta <- metaDataFiltered()
+  #   if(is.null(normList) | is.null(meta)) return(NULL)
+  #   groups <- meta$Group
+  #   batch <- meta$Batch
+  #   normData <- normList[[input$normMethod]]
+  #   if(input$imputationMethod == "No Imputation"){
+  #     normData
+  #   } else {
+  #     impute(normData, input$imputationMethod)
+  #   }
+  # })
+
   
   shiny::observeEvent(input$goButtonDAtest, {
     normList <- normProteins()

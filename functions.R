@@ -19,7 +19,7 @@ extractColumnNames = function(columnNames){
   return(list(isTMT = isTMT, rawDataCols = rawDataCols))
 }
 
-extractPeptideData = function(rawData){
+extractPeptideData = function(rawData, peptideAnnotationColums){
   # quality filter 
   remove = rawData$Reverse == "+" | rawData$Potential.contaminant == "+"
   rawData = rawData[!remove,]
@@ -33,7 +33,7 @@ extractPeptideData = function(rawData){
   return(list(data = extractedData, isTMT = isTMT))
 }
 
-extractProteinData = function(rawData){
+extractProteinData = function(rawData, proteinAnnotationColums){
   # quality filter 
   if(all(c("Reverse", "Potential.contaminant", "Only.identified.by.site") %in% colnames(rawData))){
     remove = rawData$Reverse == "+" | rawData$Potential.contaminant == "+" | rawData$Only.identified.by.site == "+"
