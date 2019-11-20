@@ -231,7 +231,7 @@ server <- function(input, output, session) {
 
     tmpRawData = data.frame(fread(peptFile$datapath))
     tmpData = extractPeptideData(rawData = tmpRawData)
-    ifelse(tmpData[["isTMT"]], cat("Peptides: TMT detected\n"), cat("Peptides: Label-Free detected\n"))
+    cat(ifelse(tmpData[["isTMT"]], "Peptides: TMT detected\n", "Peptides: Label-Free detected\n"))
     tmpData[["data"]]
   })
   
@@ -247,7 +247,7 @@ server <- function(input, output, session) {
     cat("Filtering peptides (can take a few minutes) ...")
     filteredProteins = filterPeptides(peptides)
     
-    # print(input$peptFile$datapath)
+    # save(input$peptFile, file = "inputFile.Rdata")
     
     write.table(filteredProteins, file = input$saveProteinFilename, sep = "\t", row.names = F) #, col.names=NA
     cat(" done\n")
@@ -261,7 +261,7 @@ server <- function(input, output, session) {
 
     tmpRawData = data.frame(fread(protFile$datapath))
     tmpData = extractProteinData(rawData = tmpRawData)
-    ifelse(tmpData[["isTMT"]], cat("Proteins: TMT detected\n"), cat("Proteins: Label-Free detected\n"))
+    cat(ifelse(tmpData[["isTMT"]], "Proteins: TMT detected\n", "Proteins: Label-Free detected\n"))
     tmpData[["data"]]
   })
   
