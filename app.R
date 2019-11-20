@@ -179,7 +179,10 @@ body <- dashboardBody(
             "LogFC density",
             plotOutput("logFC_density")
           )
-        )
+        ),
+        selectInput("normMethodCorrelationHeatmap", "Normalization Method:", 
+                    c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
+                      "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm"))
       )
     ),
     
@@ -192,9 +195,11 @@ body <- dashboardBody(
                     c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
                       "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm")),
         selectInput("imputationMethod", "Imputation Method:", 
-                    c("No Imputation", "KNN", "QRILC", "MinDet", "MinProb", "min", "zero")),
-        shinySaveButton("saveNormProtein", "Save file", "Save file as ...", filetype=list(txt="txt"))
-      )),
+                    c("No Imputation", "KNN", "QRILC", "MinDet", "MinProb", "min", "zero"))
+      ),
+      shinySaveButton("saveNormProtein", "Save file", "Save file as ...", filetype=list(txt="txt"))
+      
+      ),
       
       tweaks,
       fluidRow(column(width = 4, controls)),
@@ -230,6 +235,7 @@ ui <- dashboardPage(header, sidebar, body)
 server <- function(input, output, session) {
   peptideAnnotationColums = c("id", "Protein.group.IDs")
   proteinAnnotationColums = c("id")
+  # shinyjs::hide("normMethodCorrelationHeatmap")
   
   peptides <- reactive({
     peptFile <- input$peptFile
@@ -246,7 +252,6 @@ server <- function(input, output, session) {
     volumes <- c("UserFolder" = getwd())
     shinyFileSave(input, "savePep2Pro", roots=volumes, session=session)
     fileinfo <- parseSavePath(volumes, input$savePep2Pro)
-    data <- data.frame(a=c(1,2))
     if (nrow(fileinfo) > 0) {
       shinyjs::disable("savePep2Pro")
       shinyjs::show("textFilteringPeptides")
@@ -519,6 +524,8 @@ server <- function(input, output, session) {
   
   
   output$totalIntensity_barplot <- renderPlot({
+    # shinyjs::hide("normMethodCorrelationHeatmap")
+    
     normList <- normProteins()
     meta <- metaDataFiltered()
     
@@ -541,6 +548,8 @@ server <- function(input, output, session) {
   })
   
   output$PCV_boxplot <- renderPlot({
+    # shinyjs::hide("normMethodCorrelationHeatmap")
+    
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -558,6 +567,8 @@ server <- function(input, output, session) {
   })
   
   output$PMAD_boxplot <- renderPlot({
+    # shinyjs::hide("normMethodCorrelationHeatmap")
+    
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -576,6 +587,8 @@ server <- function(input, output, session) {
   })
   
   output$PEV_boxplot <- renderPlot({
+    # shinyjs::hide("normMethodCorrelationHeatmap")
+    
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -593,6 +606,8 @@ server <- function(input, output, session) {
   })
   
   output$cor_boxplolt <- renderPlot({
+    # shinyjs::hide("normMethodCorrelationHeatmap")
+    
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -610,6 +625,8 @@ server <- function(input, output, session) {
   })
   
   output$NA_heatmap <- renderPlot({
+    # shinyjs::hide("normMethodCorrelationHeatmap")
+    
     normList <- normProteins()
     
     meta <- metaDataFiltered()
@@ -628,6 +645,8 @@ server <- function(input, output, session) {
   })
   
   output$cor_heatmap <- renderPlot({
+    # shinyjs::show("normMethodCorrelationHeatmap")
+
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -641,10 +660,12 @@ server <- function(input, output, session) {
       sampleLabels = meta$Custom.Sample.Names
     }
     
-    heatmapCorr(normList[["loggedInt"]], groups, batch, sampleLabels)
+    heatmapCorr(normList[[input$normMethodCorrelationHeatmap]], groups, batch, sampleLabels)
   })
   
   output$logFC_density <- renderPlot({
+    # shinyjs::hide("normMethodCorrelationHeatmap")
+    
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -653,20 +674,24 @@ server <- function(input, output, session) {
     densityLogFC(normList, groups)
   })
   
-  # observeEvent(input$saveNormProtein, {
-  #   normList <- normProteins()
-  #   meta <- metaDataFiltered()
-  #   if(is.null(normList) | is.null(meta)) return(NULL)
-  #   groups <- meta$Group
-  #   batch <- meta$Batch
-  #   normData <- normList[[input$normMethod]]
-  #   if(input$imputationMethod == "No Imputation"){
-  #     normData
-  #   } else {
-  #     impute(normData, input$imputationMethod)
-  #   }
-  # })
-
+  observe({
+    volumes <- c("UserFolder" = getwd())
+    shinyFileSave(input, "saveNormProtein", roots=volumes, session=session)
+    fileinfo <- parseSavePath(volumes, input$saveNormProtein)
+    if (nrow(fileinfo) > 0) {
+      normList <- normProteins()
+      meta <- metaDataFiltered()
+      if(is.null(normList) | is.null(meta)) return(NULL)
+      groups <- meta$Group
+      batch <- meta$Batch
+      normData <- normList[[input$normMethod]]
+      if(input$imputationMethod == "No Imputation"){
+        write.table(normData, file = as.character(fileinfo$datapath), sep = "\t", row.names = F) 
+      } else {
+        write.table(impute(normData, input$imputationMethod), file = as.character(fileinfo$datapath), sep = "\t", row.names = F)
+      }
+    }
+  })
   
   shiny::observeEvent(input$goButtonDAtest, {
     normList <- normProteins()
