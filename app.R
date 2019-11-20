@@ -74,13 +74,14 @@ body <- dashboardBody(
           title="Inputs", width=12,
           fileInput("peptFile", "Peptides"),
           
-          shinySaveButton("savePep2Pro", "Save file", "Save file as ...", filetype=list(txt="txt")),
-          
-          
           useShinyjs(),
-          textInput("saveProteinFilename", "Save filtered Proteins to", value="proteinGroups_filtered.txt"),
-          actionButton("saveButton", "Save filtered Proteins"),
+          shinySaveButton("savePep2Pro", "Save file", "Save file as ...", filetype=list(txt="txt")),
           shinyjs::hidden(p(id = "textFilteringPeptides", "Processing...")),
+          
+          # useShinyjs(),
+          # textInput("saveProteinFilename", "Save filtered Proteins to", value="proteinGroups_filtered.txt"),
+          # actionButton("saveButton", "Save filtered Proteins"),
+          # shinyjs::hidden(p(id = "textFilteringPeptides", "Processing...")),
           
           fileInput("protFile", "Proteins")
         )
@@ -239,24 +240,24 @@ server <- function(input, output, session) {
     tmpData[["data"]]
   })
   
-  observeEvent(input$saveButton, {
-    validate(
-      need(input$saveProteinFilename != "", message="Please enter a valid filename")
-    )
-    
-    shinyjs::disable("saveButton")
-    shinyjs::show("textFilteringPeptides")
-    
-    peptides = peptides()
-    cat("Filtering peptides (can take a few minutes) ...")
-    filteredProteins = filterPeptides(peptides)
-    
-    
-    write.table(filteredProteins, file = input$saveProteinFilename, sep = "\t", row.names = F) #, col.names=NA
-    cat(" done\n")
-    shinyjs::enable("saveButton")
-    shinyjs::hide("textFilteringPeptides")
-  })
+  # observeEvent(input$saveButton, {
+  #   validate(
+  #     need(input$saveProteinFilename != "", message="Please enter a valid filename")
+  #   )
+  #   
+  #   shinyjs::disable("saveButton")
+  #   shinyjs::show("textFilteringPeptides")
+  #   
+  #   peptides = peptides()
+  #   cat("Filtering peptides (can take a few minutes) ...")
+  #   filteredProteins = filterPeptides(peptides)
+  #   
+  #   
+  #   write.table(filteredProteins, file = input$saveProteinFilename, sep = "\t", row.names = F) #, col.names=NA
+  #   cat(" done\n")
+  #   shinyjs::enable("saveButton")
+  #   shinyjs::hide("textFilteringPeptides")
+  # })
   
   observe({
     volumes <- c("UserFolder" = getwd())
@@ -264,9 +265,8 @@ server <- function(input, output, session) {
     fileinfo <- parseSavePath(volumes, input$savePep2Pro)
     data <- data.frame(a=c(1,2))
     if (nrow(fileinfo) > 0) {
-
       shinyjs::disable("savePep2Pro")
-
+      shinyjs::show("textFilteringPeptides")
       peptides = peptides()
       cat("Filtering peptides (can take a few minutes) ...")
       # save(peptides, file = "peptides.Rdata")
@@ -274,10 +274,7 @@ server <- function(input, output, session) {
       write.table(filteredProteins, file = as.character(fileinfo$datapath), sep = "\t", row.names = F) #, col.names=NA
       cat(" done\n")
       shinyjs::enable("savePep2Pro")
-      
-      
-      
-      # write.xlsx(data, as.character(fileinfo$datapath))
+      shinyjs::hide("textFilteringPeptides")
     }
   })
   
@@ -390,7 +387,7 @@ server <- function(input, output, session) {
       sampleLabels = meta$Custom.Sample.Names
     }
     boxplot(proteins[, sampleCols], outline=FALSE, col=colorGroup(meta$Group)[meta$Group], main="Boxplot of Proteins",
-            xlab="Sample", ylab="Corrected Intensity", names=sampleLabels)
+            xlab="Sample", ylab="Corrected Intensity", names=sampleLabels, las = 2)
     legend("top", inset=c(0, -.085), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
            col=colorGroup(meta$Group), pch=15, horiz=TRUE)
   })
@@ -409,7 +406,7 @@ server <- function(input, output, session) {
       sampleLabels = meta$Custom.Sample.Names
     }
     boxplot(peptides[, sampleCols], outline=FALSE, col=colorGroup(meta$Group)[meta$Group], main="Boxplot of Peptides",
-            xlab="Sample", ylab="Corrected Intensity", names=sampleLabels)
+            xlab="Sample", ylab="Corrected Intensity", names=sampleLabels, las = 2)
     legend("top", inset=c(0, -.085), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
            col=colorGroup(meta$Group), pch=15, horiz=TRUE)
   })
@@ -544,9 +541,15 @@ server <- function(input, output, session) {
     
     if(is.null(normList) | is.null(meta)) return(NULL)
     
+    if(meta$Custom.Sample.Name[1] == ""){
+      sampleLabels = meta$Peptide.Sample.Names
+    } else {
+      sampleLabels = meta$Custom.Sample.Names
+    }
+    
     par(mfrow = c(3,3), mar=c(4,8,3,1))
     for(i in names(normList)){
-      barplot(colSums(normList[[i]], na.rm = T), main = i, las = 2, yaxt="n", cex.main = 1.5, col = plasma(ncol(normList[[i]])))
+      barplot(colSums(normList[[i]], na.rm = T), main = i, las = 2, yaxt="n", cex.main = 1.5, col = plasma(ncol(normList[[i]])), names.arg = sampleLabels)
       axis(side = 2, cex.axis=1.5, las = 2)
       # axis(side = 1, at = seq_along(colnames(normList[[i]])), labels = colnames(normList[[i]]), cex.axis=1.5, las = 2)
       if(i == "vsnNorm") mtext(side = 2, text = "Total Intensity", line = 6, cex = 1.5)
@@ -632,7 +635,13 @@ server <- function(input, output, session) {
     groups <- meta$Group
     batch <- meta$Batch
     
-    heatmapMissing(normList[["loggedInt"]], groups, batch)
+    if(meta$Custom.Sample.Name[1] == ""){
+      sampleLabels = meta$Peptide.Sample.Names
+    } else {
+      sampleLabels = meta$Custom.Sample.Names
+    }
+    
+    heatmapMissing(normList[["loggedInt"]], groups, batch, sampleLabels)
   })
   
   output$cor_heatmap <- renderPlot({
@@ -643,7 +652,13 @@ server <- function(input, output, session) {
     groups <- meta$Group
     batch <- meta$Batch
     
-    heatmapCorr(normList[["loggedInt"]], groups, batch)
+    if(meta$Custom.Sample.Name[1] == ""){
+      sampleLabels = meta$Peptide.Sample.Names
+    } else {
+      sampleLabels = meta$Custom.Sample.Names
+    }
+    
+    heatmapCorr(normList[["loggedInt"]], groups, batch, sampleLabels)
   })
   
   output$logFC_density <- renderPlot({
