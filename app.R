@@ -11,6 +11,7 @@ library(imputeLCMD) # QRILC, MinDet imputation
 library(sva) # combat
 library(shinyjs) # hiding button
 library(rhandsontable) # edibale table
+library(shinyFiles) # save to button
 
 source("normFunctions.R")
 source("functions.R")
@@ -72,6 +73,9 @@ body <- dashboardBody(
         box(
           title="Inputs", width=12,
           fileInput("peptFile", "Peptides"),
+          
+          shinySaveButton("savePep2Pro", "Save file", "Save file as ...", filetype=list(txt="txt")),
+          
           
           useShinyjs(),
           textInput("saveProteinFilename", "Save filtered Proteins to", value="proteinGroups_filtered.txt"),
@@ -228,7 +232,7 @@ server <- function(input, output, session) {
   peptides <- reactive({
     peptFile <- input$peptFile
     if(is.null(peptFile)) return(NULL)
-
+    
     tmpRawData = data.frame(fread(peptFile$datapath))
     tmpData = extractPeptideData(rawData = tmpRawData)
     cat(ifelse(tmpData[["isTMT"]], "Peptides: TMT detected\n", "Peptides: Label-Free detected\n"))
@@ -247,12 +251,34 @@ server <- function(input, output, session) {
     cat("Filtering peptides (can take a few minutes) ...")
     filteredProteins = filterPeptides(peptides)
     
-    # save(input$peptFile, file = "inputFile.Rdata")
     
     write.table(filteredProteins, file = input$saveProteinFilename, sep = "\t", row.names = F) #, col.names=NA
     cat(" done\n")
     shinyjs::enable("saveButton")
     shinyjs::hide("textFilteringPeptides")
+  })
+  
+  observe({
+    volumes <- c("UserFolder" = getwd())
+    shinyFileSave(input, "savePep2Pro", roots=volumes, session=session)
+    fileinfo <- parseSavePath(volumes, input$savePep2Pro)
+    data <- data.frame(a=c(1,2))
+    if (nrow(fileinfo) > 0) {
+
+      shinyjs::disable("savePep2Pro")
+
+      peptides = peptides()
+      cat("Filtering peptides (can take a few minutes) ...")
+      # save(peptides, file = "peptides.Rdata")
+      filteredProteins = filterPeptides(peptides)
+      write.table(filteredProteins, file = as.character(fileinfo$datapath), sep = "\t", row.names = F) #, col.names=NA
+      cat(" done\n")
+      shinyjs::enable("savePep2Pro")
+      
+      
+      
+      # write.xlsx(data, as.character(fileinfo$datapath))
+    }
   })
   
   proteins <- reactive({

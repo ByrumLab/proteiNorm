@@ -167,7 +167,7 @@ colorGroup = function(groups){
   return(groupCol)
 }
 
-heatmapMissing = function(data, groups, batch){
+heatmapMissing = function(data, groups, batch, sampleLabels){
   
   missing = !is.na(data)
   complete = apply(missing, 1, all)
@@ -179,15 +179,15 @@ heatmapMissing = function(data, groups, batch){
   batchCol =  colorBatch(batch)
   groupCol = colorGroup(groups)
   
-  hm_clust = heatmapClustered(groups, batch, missing, groupCol, batchCol)
-  hm_group = heatmapGroup(groups, batch, missing, groupCol, batchCol)
-  hm_batch = heatmapBatch(groups, batch, missing, groupCol, batchCol)
+  hm_clust = heatmapClustered(groups, batch, missing, groupCol, batchCol, sampleLabels)
+  hm_group = heatmapGroup(groups, batch, missing, groupCol, batchCol, sampleLabels)
+  hm_batch = heatmapBatch(groups, batch, missing, groupCol, batchCol, sampleLabels)
   
   draw(hm_clust+hm_group+hm_batch, heatmap_legend_side = "right", annotation_legend_side = "right", ht_gap = unit(2, "cm"), column_title = "Missing values")
 }
 
 
-heatmapClustered = function(groups, batch, missing, groupCol, batchCol){
+heatmapClustered = function(groups, batch, missing, groupCol, batchCol, sampleLabels){
   ColAnn <- HeatmapAnnotation(Sample = groups, Batch = batch, col = list(Sample = groupCol, Batch = batchCol), 
                               annotation_legend_param = list(
                                 Sample = list(
@@ -205,7 +205,7 @@ heatmapClustered = function(groups, batch, missing, groupCol, batchCol){
   hm_clust = Heatmap(missing+0, col = c("white", "black"), column_names_side = "top",  column_title = "Clustered",
                      show_row_names = FALSE, show_column_names = TRUE, name = "Missing values pattern", 
                      column_names_gp = gpar(fontsize = 16), heatmap_legend_param = list(at = c(0, 1), labels = c("Missing value", "Valid value")), 
-                     top_annotation = ColAnn)
+                     top_annotation = ColAnn, column_labels = sampleLabels)
   # draw(hm_clust, heatmap_legend_side = "right", annotation_legend_side = "right")
   return(hm_clust)
 }
@@ -213,7 +213,7 @@ heatmapClustered = function(groups, batch, missing, groupCol, batchCol){
 
 
 
-heatmapGroup = function(groups, batch, missing, groupCol, batchCol){
+heatmapGroup = function(groups, batch, missing, groupCol, batchCol, sampleLabels){
   orderGroups = order(groups, batch)
   groups_groupSorted = groups[orderGroups]
   batch_groupSorted = batch[orderGroups]
@@ -234,12 +234,12 @@ heatmapGroup = function(groups, batch, missing, groupCol, batchCol){
   hm_group = Heatmap(missing_groupSorted+0, col = c("white", "black"), column_names_side = "top",  column_title = "Sorted by Groups",
                      show_row_names = FALSE, show_column_names = TRUE, name = "Missing values pattern", 
                      column_names_gp = gpar(fontsize = 16), heatmap_legend_param = list(at = c(0, 1), labels = c("Missing value", "Valid value")), 
-                     top_annotation = ColAnn, cluster_columns = FALSE)
+                     top_annotation = ColAnn, cluster_columns = FALSE, column_labels = sampleLabels)
   # draw(hm_group, heatmap_legend_side = "right", annotation_legend_side = "right")
   return(hm_group)
 }
 
-heatmapBatch = function(groups, batch, missing, groupCol, batchCol){
+heatmapBatch = function(groups, batch, missing, groupCol, batchCol, sampleLabels){
   orderBatch = order(batch, groups)
   groups_batchSorted = groups[orderBatch]
   batch_batchSorted = batch[orderBatch]
@@ -260,13 +260,13 @@ heatmapBatch = function(groups, batch, missing, groupCol, batchCol){
   hm_batch = Heatmap(missing_batchSorted+0, col = c("white", "black"), column_names_side = "top",  column_title = "Sorted by Batch",
                      show_row_names = FALSE, show_column_names = TRUE, name = "Missing values pattern", 
                      column_names_gp = gpar(fontsize = 16), heatmap_legend_param = list(at = c(0, 1), labels = c("Missing value", "Valid value")), 
-                     top_annotation = ColAnn, cluster_columns = FALSE)
+                     top_annotation = ColAnn, cluster_columns = FALSE, column_labels = sampleLabels)
   # draw(hm_group, heatmap_legend_side = "right", annotation_legend_side = "right")
   return(hm_batch)
 }
 
 
-heatmapCorr = function(data, groups, batch){
+heatmapCorr = function(data, groups, batch, sampleLabels){
   cor_mat <- cor(data, use = "pairwise.complete.obs")
   
   ColAnn <- HeatmapAnnotation(Sample = groups, 
@@ -298,7 +298,8 @@ heatmapCorr = function(data, groups, batch){
                     column_names_gp = gpar(fontsize = 12), 
                     row_names_gp = gpar(fontsize = 12), 
                     top_annotation = ColAnn, 
-                    left_annotation = RowAnn
+                    left_annotation = RowAnn,
+                    column_labels = sampleLabels, row_labels = sampleLabels
   )
   
   draw(hm_corr, heatmap_legend_side = "top")
