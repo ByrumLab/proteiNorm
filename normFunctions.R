@@ -28,7 +28,7 @@ meanNorm <- function(loggedDat) {
 }
 
 vsnNorm <- function(dat) {
-  vsnNormed <- suppressMessages(vsn::justvsn(as.matrix(dat), ))
+  vsnNormed <- suppressMessages(vsn::justvsn(as.matrix(dat)))
   colnames(vsnNormed) <- colnames(dat)
   row.names(vsnNormed) <- rownames(dat)
   return(as.matrix(vsnNormed))

@@ -370,22 +370,35 @@ impute = function(normData, imputMethod){
 }
 
 
-DAtest = function(normData, groups, batch, imputed, exludedTests){ # will need to include other covariates later
+DAtest = function(normData, groups, batch, imputed, exludedTests, R, cores, effectSize){ # will need to include other covariates later
   predictor = as.character(groups)
-  covar = list(batch = as.character(batch)) # covar$batch[4] = "2"
+  covar = list(batch = as.character(batch))
   
   availableTests  = eval(formals(testDA)$tests)
   performTests = availableTests[!availableTests %in% exludedTests]
   
   # Prevent error if only 1 batch
   if(length(unique(batch)) == 1){ 
-    res <- testDA(data = 2^normData, predictor = predictor, cores = 10, R = 1, relative = FALSE, tests = performTests)
+    res <- testDA(data = 2^normData, 
+                  predictor = predictor, 
+                  cores = cores, 
+                  R = R, 
+                  relative = FALSE, 
+                  tests = performTests,
+                  effectSize = effectSize)
     return(res)
   }
   
   if(!imputed){
     ## DAtest
-    res <- testDA(data = 2^normData, predictor = predictor, cores = 10, R = 1, covars = covar, relative = FALSE, tests = performTests) # select cores and R
+    res <- testDA(data = 2^normData, 
+                  predictor = predictor, 
+                  cores = cores, 
+                  R = R, 
+                  covars = covar, 
+                  relative = FALSE, 
+                  tests = performTests,
+                  effectSize = effectSize)
     return(res)
   }
   
@@ -394,7 +407,13 @@ DAtest = function(normData, groups, batch, imputed, exludedTests){ # will need t
     tempCombat = ComBat(dat=normData, batch=batch, mod=NULL, par.prior=TRUE, prior.plots=TRUE)
     
     ## DAtest
-    res <- testDA(data = 2^tempCombat, predictor = predictor, cores = 10, R = 1, relative = FALSE, tests = performTests)
+    res <- testDA(data = 2^tempCombat, 
+                  predictor = predictor, 
+                  cores = cores, 
+                  R = R, 
+                  relative = FALSE, 
+                  tests = performTests,
+                  effectSize = effectSize)
     return(res)
   } 
 }

@@ -12,6 +12,8 @@ library(sva) # combat
 library(shinyjs) # hiding button
 library(rhandsontable) # edibale table
 library(shinyFiles) # save to button
+library(parallel) # detect cores
+
 
 source("normFunctions.R")
 source("functions.R")
@@ -39,7 +41,7 @@ tweaks <-
 DAtestTests = eval(formals(testDA)$tests)
 allChecks <- seq_along(DAtestTests)
 names(allChecks) <- DAtestTests
-controls <-
+controlsDAtest <-
   list(h3("Test to be EXCLUDED:"), 
        tags$div(align = 'left', 
                 class = 'multicol', 
@@ -48,6 +50,17 @@ controls <-
                                    choices  = allChecks,
                                    selected = which(DAtestTests %in% "per"),
                                    inline   = FALSE))) 
+
+controlsRmSamples <-
+  list(h3("Samples to be removed:"), 
+       tags$div(align = 'left', 
+                class = 'multicol', 
+                checkboxGroupInput(inputId  = "sampleCheckbox", 
+                                   label    = NULL, 
+                                   inline   = FALSE))) 
+
+# checkboxGroupInput(inputId = "sampleCheckbox", label = "Samples to be removed")
+
 
 header <- dashboardHeader(title = "proteiNorm")
 
@@ -129,10 +142,15 @@ body <- dashboardBody(
             "MDS",
             plotOutput("filtPeptMDS")
           )
-        )
+        ) 
       ),
       
-      checkboxGroupInput(inputId = "sampleCheckbox", label = "Samples to be removed")
+      
+      tweaks,
+      fluidRow(column(width = 4, controlsRmSamples))
+      
+      
+      # checkboxGroupInput(inputId = "sampleCheckbox", label = "Samples to be removed")
       # actionButton("updateSampleFilterButton", "Updates Samples"),
       # textOutput("selected_var")
     ),
@@ -146,6 +164,7 @@ body <- dashboardBody(
       h2("Proteins"), # cleanProteins()
       fluidRow(
         tabBox(
+          id = "normalizationTab",
           width=12,
           tabPanel(
             "Total Intensity",
@@ -201,8 +220,18 @@ body <- dashboardBody(
       
       ),
       
+      numericInput(inputId = "DAtestNumberTests", 
+                   label = "Number of times to run the tests", 
+                   value = 20, min = 1, step = 1),
+      numericInput(inputId = "DAtestEffectsize", 
+                   label = "The effect size for the spike-ins", 
+                   value = 5, min = 0, step = 0.1),
+      numericInput(inputId = "DAtestCores", 
+                   label = "Number of cores to use for parallel computing", 
+                   value = min(detectCores()-1, 10), min = 1, step = 1),
+      
       tweaks,
-      fluidRow(column(width = 4, controls)),
+      fluidRow(column(width = 4, controlsDAtest)),
       
       shiny::actionButton(inputId = "goButtonDAtest", label = "Go!", width = '100%', style='font-size:150%'),
       
@@ -328,6 +357,7 @@ server <- function(input, output, session) {
     } else {
       filteredPeptides = peptides[,c(rep(TRUE, length(peptideAnnotationColums)), !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
     }
+    filteredPeptides[filteredPeptides == 0] = NA
     filteredPeptides
   })
   
@@ -342,6 +372,7 @@ server <- function(input, output, session) {
     } else {
       filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
     }
+    filteredProteins[filteredProteins == 0] = NA
     filteredProteins
   })
   
@@ -501,6 +532,7 @@ server <- function(input, output, session) {
     proteins <- proteinsSampleFiltered()[,sampleCols]
     if(is.null(proteins)) return(NULL)
     
+    # save(proteins, file = "save.Rdata")
     normList <- vector("list", 8)
     names(normList) <- c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
                          "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm")
@@ -517,7 +549,15 @@ server <- function(input, output, session) {
   })
   
   
-  
+  observeEvent(input$normalizationTab, {
+    choice = input$normalizationTab
+    # print(choice)
+    if(choice == "Correlation heatmap"){
+      shinyjs::show("normMethodCorrelationHeatmap")
+    } else {
+      shinyjs::hide("normMethodCorrelationHeatmap")
+    }
+  })
   
   
   
@@ -703,10 +743,14 @@ server <- function(input, output, session) {
     
     cat("Excluding: ", DAtestTests[as.numeric(input$checkboxDAtestTests)], "\n")
     DAtestResults = if(input$imputationMethod == "No Imputation"){
-      DAtest(normData, groups, batch, imputed = FALSE, exludedTests = DAtestTests[as.numeric(input$checkboxDAtestTests)]) # specify effect size
+      DAtest(normData, groups, batch, imputed = FALSE, 
+             exludedTests = DAtestTests[as.numeric(input$checkboxDAtestTests)],
+             R = input$DAtestNumberTests, cores = input$DAtestCores, effectSize = input$DAtestEffectsize)
     } else {
       tempImpute = impute(normData, input$imputationMethod)
-      DAtest(tempImpute, groups, batch, imputed = TRUE, exludedTests = DAtestTests[as.numeric(input$checkboxDAtestTests)])
+      DAtest(tempImpute, groups, batch, imputed = TRUE, 
+             exludedTests = DAtestTests[as.numeric(input$checkboxDAtestTests)],
+             R = input$DAtestNumberTests, cores = input$DAtestCores, effectSize = input$DAtestEffectsize)
     }
     
     output$DAtestResults <- renderDT({ summary(DAtestResults) })
@@ -725,7 +769,18 @@ server <- function(input, output, session) {
     normData <- normList[[input$normMethod]]
     if(input$imputationMethod != "No Imputation") normData = impute(normData, input$imputationMethod)
     
-    DAtestPowerResults = powerDA(2^normData, predictor = as.character(groups), test = input$DAtest4power, cores = 10, relative = FALSE)
+    DAtestEffectsize = input$DAtestEffectsize
+    DAtestPowerResults = powerDA(2^normData, 
+                                 predictor = as.character(groups), 
+                                 test = input$DAtest4power, 
+                                 cores = input$DAtestCores,
+                                 relative = FALSE, 
+                                 effectSizes = c(DAtestEffectsize/5, DAtestEffectsize/2, DAtestEffectsize, 
+                                                 1.5*DAtestEffectsize, 2*DAtestEffectsize, 5*DAtestEffectsize, 
+                                                 10*DAtestEffectsize),
+                                 R = 5 # more than 5 don't work (bug with error)
+                                 # R = input$DAtestNumberTests
+                                 )
     output$DAtestPowerResults <- renderDT({ summary(DAtestPowerResults) })
     output$DAtestPowerFigure <- renderPlot({ plot(DAtestPowerResults) })
   })
