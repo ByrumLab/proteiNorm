@@ -27,10 +27,10 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 tweaks <- 
   list(tags$head(tags$style(HTML("
                                  .multicol { 
-                                 height: 150px;
-                                 -webkit-column-count: 3; /* Chrome, Safari, Opera */ 
-                                 -moz-column-count: 3;    /* Firefox */ 
-                                 column-count: 3; 
+                                 height: 300px;
+                                 -webkit-column-count: 2; /* Chrome, Safari, Opera */ 
+                                 -moz-column-count: 2;    /* Firefox */ 
+                                 column-count: 2; 
                                  -moz-column-fill: auto;
                                  -column-fill: auto;
                                  } 
@@ -40,7 +40,7 @@ tweaks <-
 
 DAtestTests = eval(formals(testDA)$tests)
 allChecks <- seq_along(DAtestTests)
-names(allChecks) <- DAtestTests
+names(allChecks) <- DAtestTestNames[DAtestTests]
 controlsDAtest <-
   list(h3("Test to be EXCLUDED:"), 
        tags$div(align = 'left', 
@@ -230,8 +230,8 @@ body <- dashboardBody(
                    label = "Number of cores to use for parallel computing", 
                    value = min(detectCores()-1, 10), min = 1, step = 1),
       
-      tweaks,
-      fluidRow(column(width = 4, controlsDAtest)),
+      # tweaks,
+      fluidRow(column(width = 7, controlsDAtest)),
       
       shiny::actionButton(inputId = "goButtonDAtest", label = "Go!", width = '100%', style='font-size:150%'),
       
@@ -244,7 +244,7 @@ body <- dashboardBody(
     tabItem(
       tabName = "DAtestPower",
       fluidRow(inputPanel(
-        selectInput(inputId = "DAtest4power", label = "Estimating statistical power for:", choices = eval(formals(testDA)$tests))
+        selectInput(inputId = "DAtest4power", label = "Estimating statistical power for:", choices = unname(DAtestTestNames[eval(formals(testDA)$tests)]))
       )),
       
       shiny::actionButton(inputId = "goButtonDAPower", label = "Go!", width = '100%', style='font-size:150%'),
@@ -740,8 +740,8 @@ server <- function(input, output, session) {
     groups <- meta$Group
     batch <- meta$Batch
     normData <- normList[[input$normMethod]]
-    
-    cat("Excluding: ", DAtestTests[as.numeric(input$checkboxDAtestTests)], "\n")
+
+    cat("Excluding: ", DAtestTestNames[DAtestTests[as.numeric(input$checkboxDAtestTests)]], "\n")
     DAtestResults = if(input$imputationMethod == "No Imputation"){
       DAtest(normData, groups, batch, imputed = FALSE, 
              exludedTests = DAtestTests[as.numeric(input$checkboxDAtestTests)],
@@ -756,7 +756,8 @@ server <- function(input, output, session) {
     output$DAtestResults <- renderDT({ summary(DAtestResults) })
     output$DAtestFigure <- renderPlot({ plot(DAtestResults) })
     
-    updateSelectInput(session, "DAtest4power", choices = rownames(DAtestResults$run.times))
+    updatedTests = DAtestTestNames[rownames(DAtestResults$run.times)]; names(updatedTests) = NULL
+    updateSelectInput(session, "DAtest4power", choices = updatedTests)
   })
   
   
@@ -772,7 +773,7 @@ server <- function(input, output, session) {
     DAtestEffectsize = input$DAtestEffectsize
     DAtestPowerResults = powerDA(2^normData, 
                                  predictor = as.character(groups), 
-                                 test = input$DAtest4power, 
+                                 test = names(DAtestTestNames)[DAtestTestNames == input$DAtest4power], 
                                  cores = input$DAtestCores,
                                  relative = FALSE, 
                                  effectSizes = c(DAtestEffectsize/5, DAtestEffectsize/2, DAtestEffectsize, 

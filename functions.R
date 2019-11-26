@@ -370,6 +370,55 @@ impute = function(normData, imputMethod){
 }
 
 
+DAtestTestNames = c(
+  "adx" = "ALDEx2 (adx)",
+  "bay" = "baySeq (bay)",
+  "ds2" = "DESeq2 man. geoMeans (ds2)",
+  "ds2x" = "DESeq2 (ds2x)",
+  "per" = "Permutation (per)",
+  "znb" = "ZI-NegBin GLM (znb)",
+  "zpo" = "ZI-Poisson GLM (zpo)",
+  "msf" = "MgSeq Feature (msf)",
+  "zig" = "MgSeq ZIG (zig)",
+  "erq" = "EdgeR qll - TMM (erq)",
+  "erq2" = "EdgeR qll - RLE (erq2)",
+  "neb" = "Negbinom GLM (neb)",
+  "qpo" = "Quasi-Poisson GLM (qpo)",
+  "poi" = "Poisson GLM (poi)",
+  "sam" = "SAMseq (sam)",
+  "lrm" = "Linear regression (lrm)",
+  "llm" = "Log Linear reg. (llm)",
+  "llm2" = "Log Linear reg. 2 (llm2)",
+  "lma" = "Linear model - ALR (lma)",
+  "lmc" = "Linear model - CLR (lmc)",
+  "ere" = "EdgeR exact - TMM (ere)",
+  "ere2" = "EdgeR exact - RLE (ere2)",
+  "pea" = "Pearson (pea)",
+  "spe" = "Spearman (spe)",
+  "wil" = "Wilcox (wil)",
+  "kru" = "Kruskal-Wallis (kru)",
+  "qua" = "Quade (qua)",
+  "fri" = "Friedman (fri)",
+  "ttt" = "t-test (ttt)",
+  "ltt" = "Log t-test (ltt)",
+  "ltt2" = "Log t-test2 (ltt2)",
+  "tta" = "t-test - ALR (tta)",
+  "ttc" = "t-test - CLR (ttc)",
+  "aov" = "ANOVA (aov)",
+  "lao" = "Log ANOVA (lao)",
+  "lao2" = "Log ANOVA 2 (lao2)",
+  "aoa" = "ANOVA - ALR (aoa)",
+  "aoc" = "ANOVA - CLR (aoc)",
+  "vli" = "LIMMA voom (vli)",
+  "lim" = "LIMMA (lim)",
+  "lli" = "Log LIMMA (lli)",
+  "lli2" = "Log LIMMA 2 (lli2)",
+  "lia" = "LIMMA - ALR (lia)",
+  "lic" = "LIMMA - CLR (lic)"
+)
+
+
+
 DAtest = function(normData, groups, batch, imputed, exludedTests, R, cores, effectSize){ # will need to include other covariates later
   predictor = as.character(groups)
   covar = list(batch = as.character(batch))
@@ -417,6 +466,9 @@ DAtest = function(normData, groups, batch, imputed, exludedTests, R, cores, effe
     return(res)
   } 
 }
+
+
+
 
 
 
