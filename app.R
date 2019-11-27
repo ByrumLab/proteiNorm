@@ -264,8 +264,7 @@ ui <- dashboardPage(header, sidebar, body)
 server <- function(input, output, session) {
   peptideAnnotationColums = c("id", "Protein.group.IDs")
   proteinAnnotationColums = c("id")
-  # shinyjs::hide("normMethodCorrelationHeatmap")
-  
+
   peptides <- reactive({
     peptFile <- input$peptFile
     if(is.null(peptFile)) return(NULL)
@@ -286,7 +285,6 @@ server <- function(input, output, session) {
       shinyjs::show("textFilteringPeptides")
       peptides = peptides()
       cat("Filtering peptides (can take a few minutes) ...")
-      # save(peptides, file = "peptides.Rdata")
       filteredProteins = filterPeptides(peptides)
       write.table(filteredProteins, file = as.character(fileinfo$datapath), sep = "\t", row.names = F) #, col.names=NA
       cat(" done\n")
@@ -532,7 +530,6 @@ server <- function(input, output, session) {
     proteins <- proteinsSampleFiltered()[,sampleCols]
     if(is.null(proteins)) return(NULL)
     
-    # save(proteins, file = "save.Rdata")
     normList <- vector("list", 8)
     names(normList) <- c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
                          "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm")
@@ -564,8 +561,7 @@ server <- function(input, output, session) {
   
   
   output$totalIntensity_barplot <- renderPlot({
-    # shinyjs::hide("normMethodCorrelationHeatmap")
-    
+
     normList <- normProteins()
     meta <- metaDataFiltered()
     
@@ -588,8 +584,6 @@ server <- function(input, output, session) {
   })
   
   output$PCV_boxplot <- renderPlot({
-    # shinyjs::hide("normMethodCorrelationHeatmap")
-    
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -607,8 +601,6 @@ server <- function(input, output, session) {
   })
   
   output$PMAD_boxplot <- renderPlot({
-    # shinyjs::hide("normMethodCorrelationHeatmap")
-    
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -627,8 +619,6 @@ server <- function(input, output, session) {
   })
   
   output$PEV_boxplot <- renderPlot({
-    # shinyjs::hide("normMethodCorrelationHeatmap")
-    
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -646,8 +636,6 @@ server <- function(input, output, session) {
   })
   
   output$cor_boxplolt <- renderPlot({
-    # shinyjs::hide("normMethodCorrelationHeatmap")
-    
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -665,13 +653,9 @@ server <- function(input, output, session) {
   })
   
   output$NA_heatmap <- renderPlot({
-    # shinyjs::hide("normMethodCorrelationHeatmap")
-    
     normList <- normProteins()
-    
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
-    
     groups <- meta$Group
     batch <- meta$Batch
     
@@ -685,8 +669,6 @@ server <- function(input, output, session) {
   })
   
   output$cor_heatmap <- renderPlot({
-    # shinyjs::show("normMethodCorrelationHeatmap")
-
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -704,8 +686,7 @@ server <- function(input, output, session) {
   })
   
   output$logFC_density <- renderPlot({
-    # shinyjs::hide("normMethodCorrelationHeatmap")
-    
+
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
@@ -714,21 +695,28 @@ server <- function(input, output, session) {
     densityLogFC(normList, groups)
   })
   
-  observe({
+  shiny::observeEvent(input$saveNormProtein,{
     volumes <- c("UserFolder" = getwd())
     shinyFileSave(input, "saveNormProtein", roots=volumes, session=session)
     fileinfo <- parseSavePath(volumes, input$saveNormProtein)
+    print(volumes)
     if (nrow(fileinfo) > 0) {
       normList <- normProteins()
       meta <- metaDataFiltered()
+      anno <- proteinsSampleFiltered()[,proteinAnnotationColums]
       if(is.null(normList) | is.null(meta)) return(NULL)
       groups <- meta$Group
       batch <- meta$Batch
       normData <- normList[[input$normMethod]]
       if(input$imputationMethod == "No Imputation"){
-        write.table(normData, file = as.character(fileinfo$datapath), sep = "\t", row.names = F) 
+        normDataAnno = cbind(anno, normData)
+        colnames(normDataAnno)[seq_along(proteinAnnotationColums)] = proteinAnnotationColums
+        write.table(normDataAnno, file = as.character(fileinfo$datapath), sep = "\t", row.names = F) 
       } else {
-        write.table(impute(normData, input$imputationMethod), file = as.character(fileinfo$datapath), sep = "\t", row.names = F)
+        normDataImp = impute(normData, input$imputationMethod)
+        normDataImpAnno = cbind(anno, normDataImp)
+        colnames(normDataImpAnno)[seq_along(proteinAnnotationColums)] = proteinAnnotationColums
+        write.table(normDataImpAnno, file = as.character(fileinfo$datapath), sep = "\t", row.names = F)
       }
     }
   })
