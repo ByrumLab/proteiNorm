@@ -699,7 +699,6 @@ server <- function(input, output, session) {
     volumes <- c("UserFolder" = getwd())
     shinyFileSave(input, "saveNormProtein", roots=volumes, session=session)
     fileinfo <- parseSavePath(volumes, input$saveNormProtein)
-    print(volumes)
     if (nrow(fileinfo) > 0) {
       normList <- normProteins()
       meta <- metaDataFiltered()
