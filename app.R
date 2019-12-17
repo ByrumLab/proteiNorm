@@ -13,6 +13,7 @@ library(shinyjs) # hiding button
 library(rhandsontable) # edibale table
 library(shinyFiles) # save to button
 library(parallel) # detect cores
+library(rJava) # finding screen resolution
 
 
 source("normFunctions.R")
@@ -22,6 +23,14 @@ source("functions.R")
 options(shiny.maxRequestSize = 100*1024^2)
 options(stringsAsFactors=FALSE)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+# finding screen resolution
+.jinit()
+toolkit <- J("java.awt.Toolkit")
+default_toolkit <- .jrcall(toolkit, "getDefaultToolkit")
+screenDim <- .jrcall(default_toolkit, "getScreenSize")
+screenHeight <- .jcall(screenDim, "D", "getHeight")
+screenWidth <- .jcall(screenDim, "D", "getWidth")
 
 
 tweaks <- 
@@ -165,7 +174,8 @@ body <- dashboardBody(
       fluidRow(
         tabBox(
           id = "normalizationTab",
-          width=12,
+          width = 12,
+          height = round(0.8 * screenHeight),
           tabPanel(
             "Total Intensity",
             plotOutput("totalIntensity_barplot")
@@ -188,20 +198,21 @@ body <- dashboardBody(
           ),
           tabPanel(
             "Missing Values",
+            checkboxInput("showAllProtein_NA_heatmap", "Show all protein", value = FALSE, width = NULL),
             plotOutput("NA_heatmap")
           ),
           tabPanel(
             "Correlation heatmap",
+            selectInput("normMethodCorrelationHeatmap", "Normalization Method:", 
+                        c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
+                          "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm")),
             plotOutput("cor_heatmap")
           ),
           tabPanel(
             "LogFC density",
             plotOutput("logFC_density")
           )
-        ),
-        selectInput("normMethodCorrelationHeatmap", "Normalization Method:", 
-                    c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
-                      "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm"))
+        )
       )
     ),
     
@@ -370,7 +381,8 @@ server <- function(input, output, session) {
     } else {
       filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
     }
-    filteredProteins[filteredProteins == 0] = NA
+    selectData = !colnames(filteredProteins) %in% proteinAnnotationColums
+    filteredProteins[,selectData][filteredProteins[,selectData] == 0] = NA
     filteredProteins
   })
   
@@ -554,6 +566,11 @@ server <- function(input, output, session) {
     } else {
       shinyjs::hide("normMethodCorrelationHeatmap")
     }
+    if(choice == "Missing Values"){
+      shinyjs::show("showAllProtein_NA_heatmap")
+    } else {
+      shinyjs::hide("showAllProtein_NA_heatmap")
+    }
   })
   
   
@@ -665,8 +682,8 @@ server <- function(input, output, session) {
       sampleLabels = meta$Custom.Sample.Names
     }
     
-    heatmapMissing(normList[["loggedInt"]], groups, batch, sampleLabels)
-  })
+    heatmapMissing(normList[["loggedInt"]], groups, batch, sampleLabels, input$showAllProtein_NA_heatmap)
+  }, height = round(0.75 * screenHeight))
   
   output$cor_heatmap <- renderPlot({
     normList <- normProteins()
@@ -683,7 +700,7 @@ server <- function(input, output, session) {
     }
     
     heatmapCorr(normList[[input$normMethodCorrelationHeatmap]], groups, batch, sampleLabels)
-  })
+  }, height = round(0.6 * screenHeight))
   
   output$logFC_density <- renderPlot({
 

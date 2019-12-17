@@ -73,6 +73,7 @@ filterPeptides = function(peptides){
       FilteredProteins = rbind(FilteredProteins, tempFilteredProtein)
     }
   }
+  FilteredProteins[FilteredProteins == 0] = NA
   FilteredProteins = cbind(id = unique(peptides$proteinIDs), FilteredProteins)
   return(FilteredProteins)
 }
@@ -167,14 +168,13 @@ colorGroup = function(groups){
   return(groupCol)
 }
 
-heatmapMissing = function(data, groups, batch, sampleLabels){
-  
+heatmapMissing = function(data, groups, batch, sampleLabels, showAllProtein){
   missing = !is.na(data)
-  complete = apply(missing, 1, all)
-  completeNA = apply(!missing, 1, all)
-  missing = missing[!complete & !completeNA,]
-  
-  
+  if(!showAllProtein){
+    complete = apply(missing, 1, all)
+    completeNA = apply(!missing, 1, all)
+    missing = missing[!complete & !completeNA,]
+  }
   
   batchCol =  colorBatch(batch)
   groupCol = colorGroup(groups)
