@@ -307,36 +307,36 @@ heatmapCorr = function(data, groups, batch, sampleLabels){
 
 
 
-densityLogFC = function(normList, groups){
-  logFC = NULL
+densityLog2Ratio = function(normList, groups){
+  log2Ratio = NULL
   groupList = sort(unique(groups))
   for(method in names(normList)){
     for(g1 in 1:(length(groupList)-1)){
       for(g2 in (g1+1):length(groupList)){
         
-        logFC[[method]] = rowMeans(normList[[method]][,groups == groupList[g1]], na.rm = T) - 
+        log2Ratio[[method]] = rowMeans(normList[[method]][,groups == groupList[g1]], na.rm = T) - 
           rowMeans(normList[[method]][,groups == groupList[g2]], na.rm = T)
       }
     }
   }
   
-  # minX = min(unlist(lapply(logFC, FUN = function(x) min(density(x, na.rm = T)$x))))
-  # maxX = max(unlist(lapply(logFC, FUN = function(x) max(density(x, na.rm = T)$x))))
-  maxY = max(unlist(lapply(logFC, FUN = function(x) max(density(x, na.rm = T)$y))))
+  # minX = min(unlist(lapply(log2Ratio, FUN = function(x) min(density(x, na.rm = T)$x))))
+  # maxX = max(unlist(lapply(log2Ratio, FUN = function(x) max(density(x, na.rm = T)$x))))
+  maxY = max(unlist(lapply(log2Ratio, FUN = function(x) max(density(x, na.rm = T)$y))))
   
-  minX = 0.5 * min(unlist(min(density(logFC[["vsnNorm"]], na.rm = T)$x)))
-  maxX = 0.5 * max(unlist(max(density(logFC[["vsnNorm"]], na.rm = T)$x)))
+  minX = 0.5 * min(unlist(min(density(log2Ratio[["vsnNorm"]], na.rm = T)$x)))
+  maxX = 0.5 * max(unlist(max(density(log2Ratio[["vsnNorm"]], na.rm = T)$x)))
   
-  plot(NA, xlim = c(minX, maxX), ylim = c(0,maxY), xlab = "logFC", ylab = "Density")
+  plot(NA, xlim = c(minX, maxX), ylim = c(0,maxY), xlab = "Log2 ratio", ylab = "Density")
   abline(v = 0, lty = 2, col = "grey")
   
   for(method in names(normList)){
-    lines(density(logFC[[method]], na.rm = T), 
-          col = rainbow(length(logFC))[which(names(logFC) %in% method)], 
-          lty = ifelse(which(names(logFC) %in% method) %% 2 == 0, 2, 1),
+    lines(density(log2Ratio[[method]], na.rm = T), 
+          col = rainbow(length(log2Ratio))[which(names(log2Ratio) %in% method)], 
+          lty = ifelse(which(names(log2Ratio) %in% method) %% 2 == 0, 2, 1),
           lwd = 2)
   }
-  legend("topright", names(logFC), lty=1:2, col = rainbow(length(logFC)), lwd = 2)
+  legend("topright", names(log2Ratio), lty=1:2, col = rainbow(length(log2Ratio)), lwd = 2)
 }
 
 
@@ -355,11 +355,11 @@ impute = function(normData, imputMethod){
          "MinDet" = imputeLCMD::impute.MinDet(dataSet.mvs = normData),
          "MinProb" = imputeLCMD::impute.MinProb(dataSet.mvs = normData),
          # "man" = ,
-         "min" = {
+         "Min" = {
            normData[is.na(normData)] = min(normData, na.rm = T)
            normData
          },
-         "zero" = {
+         "Zero" = {
            normData[is.na(normData)] = 0
            normData
          },

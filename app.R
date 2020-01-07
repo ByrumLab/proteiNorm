@@ -204,8 +204,8 @@ body <- dashboardBody(
           tabPanel(
             "Correlation heatmap",
             selectInput("normMethodCorrelationHeatmap", "Normalization Method:", 
-                        c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
-                          "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm")),
+                        c("Log2", "Median", "Mean", "VSN",
+                          "Quantile", "Cyclic Loess", "RLR", "Global Intensity")),
             plotOutput("cor_heatmap")
           ),
           tabPanel(
@@ -222,10 +222,10 @@ body <- dashboardBody(
       
       fluidRow(inputPanel(
         selectInput("normMethod", "Normalization Method:", 
-                    c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
-                      "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm")),
+                    c("Log2", "Median", "Mean", "VSN",
+                      "Quantile", "Cyclic Loess", "RLR", "Global Intensity")),
         selectInput("imputationMethod", "Imputation Method:", 
-                    c("No Imputation", "KNN", "QRILC", "MinDet", "MinProb", "min", "zero"))
+                    c("No Imputation", "KNN", "QRILC", "MinDet", "MinProb", "Min", "Zero"))
       ),
       shinySaveButton("saveNormProtein", "Save file", "Save file as ...", filetype=list(txt="txt"))
       
@@ -543,16 +543,16 @@ server <- function(input, output, session) {
     if(is.null(proteins)) return(NULL)
     
     normList <- vector("list", 8)
-    names(normList) <- c("loggedInt", "medianNorm", "meanNorm", "vsnNorm",
-                         "quantNorm", "cycLoessNorm", "rlrNorm", "giNorm")
-    normList[["loggedInt"]] <- logNorm(proteins)
-    normList[["medianNorm"]] <- medianNorm(normList[["loggedInt"]])
-    normList[["meanNorm"]] <- meanNorm(normList[["loggedInt"]])
-    normList[["vsnNorm"]] <- vsnNorm(proteins)
-    normList[["quantNorm"]] <- quantNorm(normList[["loggedInt"]])
-    normList[["cycLoessNorm"]] <- cycLoessNorm(normList[["loggedInt"]])
-    normList[["rlrNorm"]] <- rlrNorm(normList[["loggedInt"]])
-    normList[["giNorm"]] <- giNorm(normList[["loggedInt"]])
+    names(normList) <- c("Log2", "Median", "Mean", "VSN",
+                         "Quantile", "Cyclic Loess", "RLR", "Global Intensity")
+    normList[["Log2"]] <- logNorm(proteins)
+    normList[["Median"]] <- medianNorm(normList[["Log2"]])
+    normList[["Mean"]] <- meanNorm(normList[["Log2"]])
+    normList[["VSN"]] <- vsnNorm(proteins)
+    normList[["Quantile"]] <- quantNorm(normList[["Log2"]])
+    normList[["Cyclic Loess"]] <- cycLoessNorm(normList[["Log2"]])
+    normList[["RLR"]] <- rlrNorm(normList[["Log2"]])
+    normList[["Global Intensity"]] <- giNorm(normList[["Log2"]])
     
     normList
   })
@@ -595,7 +595,7 @@ server <- function(input, output, session) {
       barplot(colSums(normList[[i]], na.rm = T), main = i, las = 2, yaxt="n", cex.main = 1.5, col = plasma(ncol(normList[[i]])), names.arg = sampleLabels)
       axis(side = 2, cex.axis=1.5, las = 2)
       # axis(side = 1, at = seq_along(colnames(normList[[i]])), labels = colnames(normList[[i]]), cex.axis=1.5, las = 2)
-      if(i == "vsnNorm") mtext(side = 2, text = "Total Intensity", line = 6, cex = 1.5)
+      if(i == "VSN") mtext(side = 2, text = "Total Intensity", line = 6, cex = 1.5)
       abline(h = max(colSums(normList[[i]], na.rm = T)), lty = 2)
     }
   })
@@ -682,7 +682,7 @@ server <- function(input, output, session) {
       sampleLabels = meta$Custom.Sample.Names
     }
     
-    heatmapMissing(normList[["loggedInt"]], groups, batch, sampleLabels, input$showAllProtein_NA_heatmap)
+    heatmapMissing(normList[["Log2"]], groups, batch, sampleLabels, input$showAllProtein_NA_heatmap)
   }, height = round(0.75 * screenHeight))
   
   output$cor_heatmap <- renderPlot({
@@ -709,7 +709,7 @@ server <- function(input, output, session) {
     if(is.null(normList) | is.null(meta)) return(NULL)
     
     groups <- meta$Group
-    densityLogFC(normList, groups)
+    densityLog2Ratio(normList, groups)
   })
   
   shiny::observeEvent(input$saveNormProtein,{
