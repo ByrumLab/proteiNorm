@@ -20,7 +20,7 @@ source("normFunctions.R")
 source("functions.R")
 
 # Sets maximum upload size to 100MB
-options(shiny.maxRequestSize = 100*1024^2)
+options(shiny.maxRequestSize = 5000*1024^2)
 options(stringsAsFactors=FALSE)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
@@ -51,7 +51,7 @@ DAtestTests = eval(formals(testDA)$tests)
 allChecks <- seq_along(DAtestTests)
 names(allChecks) <- DAtestTestNames[DAtestTests]
 controlsDAtest <-
-  list(h3("Test to be EXCLUDED:"), 
+  list(h3("Test to be excluded:"), 
        tags$div(align = 'left', 
                 class = 'multicol', 
                 checkboxGroupInput(inputId  = "checkboxDAtestTests", 
@@ -209,8 +209,8 @@ body <- dashboardBody(
             plotOutput("cor_heatmap")
           ),
           tabPanel(
-            "LogFC density",
-            plotOutput("logFC_density")
+            "LogRatio density",
+            plotOutput("logRatio_density")
           )
         )
       )
@@ -240,6 +240,12 @@ body <- dashboardBody(
       numericInput(inputId = "DAtestCores", 
                    label = "Number of cores to use for parallel computing", 
                    value = min(detectCores()-1, 10), min = 1, step = 1),
+      selectInput(inputId = "groupSelection1", 
+                  label = "Group 1",
+                  choices = ""),
+      selectInput(inputId = "groupSelection2", 
+                  label = "Group 2",
+                  choices = ""),
       
       # tweaks,
       fluidRow(column(width = 7, controlsDAtest)),
@@ -273,9 +279,9 @@ body <- dashboardBody(
 ui <- dashboardPage(header, sidebar, body)
 
 server <- function(input, output, session) {
-  peptideAnnotationColums = c("id", "Protein.group.IDs")
+  peptideAnnotationColums = c("id", "Protein.group.IDs", "Leading.razor.protein", "Gene.names")
   proteinAnnotationColums = c("id")
-
+  
   peptides <- reactive({
     peptFile <- input$peptFile
     if(is.null(peptFile)) return(NULL)
@@ -351,9 +357,27 @@ server <- function(input, output, session) {
                                  meta$Peptide.Sample.Names
                                } else {
                                  meta$Custom.Sample.Names
-                               }
-    )
+                               })
   })
+  
+  observe({
+    req(peptides())
+    req(proteins())
+    req(metaData1())
+    req(input$metaData)
+    meta = metaData2()
+    
+    if(meta$Custom.Sample.Name[1] == ""){
+      groups = unique(meta$Group[!meta$Peptide.Sample.Names %in% input$sampleCheckbox])
+    } else {
+      groups = unique(meta$Group[!meta$Custom.Sample.Names %in% input$sampleCheckbox])
+    }
+    updateSelectInput(session, inputId = "groupSelection1", choices = groups,
+                      selected = groups[1])
+    updateSelectInput(session, inputId = "groupSelection2", choices = groups,
+                      selected = ifelse(length(groups)>1, groups[2], groups[1]))
+  })
+  
   
   peptidesSampleFiltered <- reactive({
     req(peptides())
@@ -578,7 +602,7 @@ server <- function(input, output, session) {
   
   
   output$totalIntensity_barplot <- renderPlot({
-
+    
     normList <- normProteins()
     meta <- metaDataFiltered()
     
@@ -598,7 +622,7 @@ server <- function(input, output, session) {
       if(i == "VSN") mtext(side = 2, text = "Total Intensity", line = 6, cex = 1.5)
       abline(h = max(colSums(normList[[i]], na.rm = T)), lty = 2)
     }
-  })
+  }, height = round(0.5 * screenHeight))
   
   output$PCV_boxplot <- renderPlot({
     normList <- normProteins()
@@ -614,8 +638,8 @@ server <- function(input, output, session) {
     axis(2,cex.axis=1.5, las = 2)
     axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
     mtext(side = 2, text = "Pooled Coefficient of Variation", line = 4.5, cex = 1.5)
-    points(rep(seq_along(normList), each = 2), unlist(plotData), pch = "*", cex = 1.3)
-  })
+    points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
+  }, height = round(0.5 * screenHeight))
   
   output$PMAD_boxplot <- renderPlot({
     normList <- normProteins()
@@ -632,8 +656,8 @@ server <- function(input, output, session) {
     axis(2,cex.axis=1.5, las = 2)
     axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
     mtext(side = 2, text = "Median Absolute Deviation", line = 4.5, cex = 1.5)
-    points(rep(seq_along(normList), each = 2), unlist(plotData), pch = "*", cex = 1.3)
-  })
+    points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
+  }, height = round(0.5 * screenHeight))
   
   output$PEV_boxplot <- renderPlot({
     normList <- normProteins()
@@ -649,8 +673,8 @@ server <- function(input, output, session) {
     axis(2,cex.axis=1.5, las = 2)
     axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
     mtext(side = 2, text = "Pooled Estimate of Variance", line = 4.5, cex = 1.5)
-    points(rep(seq_along(normList), each = 2), unlist(plotData), pch = "*", cex = 1.3)
-  })
+    points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
+  }, height = round(0.5 * screenHeight))
   
   output$cor_boxplolt <- renderPlot({
     normList <- normProteins()
@@ -667,7 +691,7 @@ server <- function(input, output, session) {
     axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
     mtext(side = 2, text = "Intragroup Correlation", line = 4.5, cex = 1.5)
     points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
-  })
+  }, height = round(0.5 * screenHeight))
   
   output$NA_heatmap <- renderPlot({
     normList <- normProteins()
@@ -702,15 +726,15 @@ server <- function(input, output, session) {
     heatmapCorr(normList[[input$normMethodCorrelationHeatmap]], groups, batch, sampleLabels)
   }, height = round(0.6 * screenHeight))
   
-  output$logFC_density <- renderPlot({
-
+  output$logRatio_density <- renderPlot({
+    
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
-    
     groups <- meta$Group
+    
     densityLog2Ratio(normList, groups)
-  })
+  }, height = round(0.5 * screenHeight))
   
   shiny::observeEvent(input$saveNormProtein,{
     volumes <- c("UserFolder" = getwd())
@@ -740,11 +764,16 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$goButtonDAtest, {
     normList <- normProteins()
     meta <- metaDataFiltered()
+    
     if(is.null(normList) | is.null(meta)) return(NULL)
+    normData <- normList[[input$normMethod]]
+    idx = meta$Group %in% c(input$groupSelection1, input$groupSelection2)
+    normData = normData[,idx]
+    meta = meta[idx,]
+
     groups <- meta$Group
     batch <- meta$Batch
-    normData <- normList[[input$normMethod]]
-
+    
     cat("Excluding: ", DAtestTestNames[DAtestTests[as.numeric(input$checkboxDAtestTests)]], "\n")
     DAtestResults = if(input$imputationMethod == "No Imputation"){
       DAtest(normData, groups, batch, imputed = FALSE, 
@@ -768,10 +797,15 @@ server <- function(input, output, session) {
   shiny::observeEvent(input$goButtonDAPower, {
     normList <- normProteins()
     meta <- metaDataFiltered()
+    
     if(is.null(normList) | is.null(meta)) return(NULL)
+    normData <- normList[[input$normMethod]]
+    idx = meta$Group %in% c(input$groupSelection1, input$groupSelection2)
+    normData = normData[,idx]
+    meta = meta[idx,]
+    
     groups <- meta$Group
     batch <- meta$Batch
-    normData <- normList[[input$normMethod]]
     if(input$imputationMethod != "No Imputation") normData = impute(normData, input$imputationMethod)
     
     DAtestEffectsize = input$DAtestEffectsize
@@ -785,7 +819,7 @@ server <- function(input, output, session) {
                                                  10*DAtestEffectsize),
                                  R = 5 # more than 5 don't work (bug with error)
                                  # R = input$DAtestNumberTests
-                                 )
+    )
     output$DAtestPowerResults <- renderDT({ summary(DAtestPowerResults) })
     output$DAtestPowerFigure <- renderPlot({ plot(DAtestPowerResults) })
   })

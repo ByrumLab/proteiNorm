@@ -49,15 +49,19 @@ extractProteinData = function(rawData, proteinAnnotationColums){
 
 
 outlier = function(vector){
-  vector < quantile(vector)[2] - 1.5 * IQR(vector) | quantile(vector)[4] + 1.5 * IQR(vector) < vector
+  vector < quantile(vector, na.rm = T)[2] - 1.5 * IQR(vector, na.rm = T) | 
+    quantile(vector, na.rm = T)[4] + 1.5 * IQR(vector, na.rm = T) < vector
 }
 
 
 filterPeptides = function(peptides){
   peptides = as.data.frame(peptides)
-  # save(peptides, file = "peptidesPreFilter.Rdata")
-  # print("saved")
-  peptides$proteinIDs = unlist(lapply(strsplit(peptides$Protein.group.IDs, ";"), function(x) x[1]))
+  # peptides$proteinIDs = unlist(lapply(strsplit(peptides$Protein.group.IDs, ";"), function(x) x[1]))
+  peptides$proteinIDs = paste(peptides$Leading.razor.protein, 
+    unlist(lapply(strsplit(peptides$Gene.names, ";"), function(x) x[1])), 
+    sep = "_")
+  
+  # B5MCB4
   
   colmnNames = extractColumnNames(colnames(peptides))[["rawDataCols"]]
   FilteredProteins = NULL
@@ -66,10 +70,11 @@ filterPeptides = function(peptides){
     if(nrow(tempProtein) == 1){
       FilteredProteins = rbind(FilteredProteins, tempProtein)
     } else {
+      tempProtein[tempProtein == 0] = NA
       tempProtein_log = log2(tempProtein)
       tempOutliers = apply(tempProtein_log, 2, outlier)
-      keepPeptide = !apply(tempOutliers, 1, any)
-      tempFilteredProtein = colSums(tempProtein[keepPeptide,])
+      keepPeptide = !apply(tempOutliers, 1, any, na.rm = T)
+      tempFilteredProtein = apply(tempProtein[keepPeptide,], 2, sum, na.rm = T)
       FilteredProteins = rbind(FilteredProteins, tempFilteredProtein)
     }
   }
@@ -314,8 +319,8 @@ densityLog2Ratio = function(normList, groups){
     for(g1 in 1:(length(groupList)-1)){
       for(g2 in (g1+1):length(groupList)){
         
-        log2Ratio[[method]] = rowMeans(normList[[method]][,groups == groupList[g1]], na.rm = T) - 
-          rowMeans(normList[[method]][,groups == groupList[g2]], na.rm = T)
+        log2Ratio[[method]] = c(log2Ratio[[method]], rowMeans(normList[[method]][,groups == groupList[g1]], na.rm = T) - 
+          rowMeans(normList[[method]][,groups == groupList[g2]], na.rm = T))
       }
     }
   }
@@ -324,8 +329,8 @@ densityLog2Ratio = function(normList, groups){
   # maxX = max(unlist(lapply(log2Ratio, FUN = function(x) max(density(x, na.rm = T)$x))))
   maxY = max(unlist(lapply(log2Ratio, FUN = function(x) max(density(x, na.rm = T)$y))))
   
-  minX = 0.5 * min(unlist(min(density(log2Ratio[["vsnNorm"]], na.rm = T)$x)))
-  maxX = 0.5 * max(unlist(max(density(log2Ratio[["vsnNorm"]], na.rm = T)$x)))
+  minX = 0.5 * min(unlist(min(density(log2Ratio[["VSN"]], na.rm = T)$x)))
+  maxX = 0.5 * max(unlist(max(density(log2Ratio[["VSN"]], na.rm = T)$x)))
   
   plot(NA, xlim = c(minX, maxX), ylim = c(0,maxY), xlab = "Log2 ratio", ylab = "Density")
   abline(v = 0, lty = 2, col = "grey")
