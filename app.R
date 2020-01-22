@@ -14,6 +14,7 @@ library(rhandsontable) # edibale table
 library(shinyFiles) # save to button
 library(parallel) # detect cores
 library(rJava) # finding screen resolution
+library(ggfortify) # PCA autoplot
 
 
 source("normFunctions.R")
@@ -179,6 +180,15 @@ body <- dashboardBody(
           tabPanel(
             "Total Intensity",
             plotOutput("totalIntensity_barplot")
+          ),
+          tabPanel(
+            "PCA",
+            selectInput("normMethodPCA", "Normalization Method:", 
+                        c("Log2", "Median", "Mean", "VSN",
+                          "Quantile", "Cyclic Loess", "RLR", "Global Intensity")),
+            selectInput("groupBatchPCA", "Color code Group or Batch:", 
+                        c("Group", "Batch")),
+            plotOutput("pcaPlot")
           ),
           tabPanel(
             "PCV",
@@ -585,6 +595,13 @@ server <- function(input, output, session) {
   observeEvent(input$normalizationTab, {
     choice = input$normalizationTab
     # print(choice)
+    if(choice == "PCA"){
+      shinyjs::show("normMethodPCA")
+      shinyjs::show("groupBatchPCA")
+    } else {
+      shinyjs::hide("normMethodPCA")
+      shinyjs::hide("groupBatchPCA")
+    }
     if(choice == "Correlation heatmap"){
       shinyjs::show("normMethodCorrelationHeatmap")
     } else {
@@ -614,7 +631,7 @@ server <- function(input, output, session) {
       sampleLabels = meta$Custom.Sample.Names
     }
     
-    par(mfrow = c(3,3), mar=c(4,8,3,1))
+    par(mfrow = c(3,3), mar=c(8,8,3,1))
     for(i in names(normList)){
       barplot(colSums(normList[[i]], na.rm = T), main = i, las = 2, yaxt="n", cex.main = 1.5, col = plasma(ncol(normList[[i]])), names.arg = sampleLabels)
       axis(side = 2, cex.axis=1.5, las = 2)
@@ -622,6 +639,22 @@ server <- function(input, output, session) {
       if(i == "VSN") mtext(side = 2, text = "Total Intensity", line = 6, cex = 1.5)
       abline(h = max(colSums(normList[[i]], na.rm = T)), lty = 2)
     }
+  }, height = round(0.6 * screenHeight))
+  
+  output$pcaPlot <- renderPlot({
+    normList <- normProteins()
+    meta <- metaDataFiltered()
+    if(is.null(normList) | is.null(meta)) return(NULL)
+
+    data = normList[[input$normMethodPCA]]
+    data = data[!apply(is.na(data), 1, any),]
+    pca = stats::prcomp(t(data))
+    if(meta$Custom.Sample.Name[1] == ""){
+      rownames(meta) = meta$Peptide.Sample.Names
+    } else {
+      rownames(meta) = meta$Custom.Sample.Names
+    }
+    ggplot2::autoplot(pca, data = meta, colour = input$groupBatchPCA, x = 1, y = 2, label  = TRUE)
   }, height = round(0.5 * screenHeight))
   
   output$PCV_boxplot <- renderPlot({
@@ -639,7 +672,7 @@ server <- function(input, output, session) {
     axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
     mtext(side = 2, text = "Pooled Coefficient of Variation", line = 4.5, cex = 1.5)
     points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
-  }, height = round(0.5 * screenHeight))
+  }, height = round(0.6 * screenHeight))
   
   output$PMAD_boxplot <- renderPlot({
     normList <- normProteins()
@@ -657,7 +690,7 @@ server <- function(input, output, session) {
     axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
     mtext(side = 2, text = "Median Absolute Deviation", line = 4.5, cex = 1.5)
     points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
-  }, height = round(0.5 * screenHeight))
+  }, height = round(0.6 * screenHeight))
   
   output$PEV_boxplot <- renderPlot({
     normList <- normProteins()
@@ -674,7 +707,7 @@ server <- function(input, output, session) {
     axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
     mtext(side = 2, text = "Pooled Estimate of Variance", line = 4.5, cex = 1.5)
     points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
-  }, height = round(0.5 * screenHeight))
+  }, height = round(0.6 * screenHeight))
   
   output$cor_boxplolt <- renderPlot({
     normList <- normProteins()
@@ -691,7 +724,7 @@ server <- function(input, output, session) {
     axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
     mtext(side = 2, text = "Intragroup Correlation", line = 4.5, cex = 1.5)
     points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
-  }, height = round(0.5 * screenHeight))
+  }, height = round(0.6 * screenHeight))
   
   output$NA_heatmap <- renderPlot({
     normList <- normProteins()
@@ -707,7 +740,7 @@ server <- function(input, output, session) {
     }
     
     heatmapMissing(normList[["Log2"]], groups, batch, sampleLabels, input$showAllProtein_NA_heatmap)
-  }, height = round(0.75 * screenHeight))
+  }, height = round(0.7 * screenHeight))
   
   output$cor_heatmap <- renderPlot({
     normList <- normProteins()
@@ -734,7 +767,7 @@ server <- function(input, output, session) {
     groups <- meta$Group
     
     densityLog2Ratio(normList, groups)
-  }, height = round(0.5 * screenHeight))
+  }, height = round(0.6 * screenHeight))
   
   shiny::observeEvent(input$saveNormProtein,{
     volumes <- c("UserFolder" = getwd())
