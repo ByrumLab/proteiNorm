@@ -116,10 +116,10 @@ body <- dashboardBody(
       tabName = "filters",
       fluidRow(
         box(
-          radioButtons('protMDSColor', 'Color MDS by', choices=c("Group", "Quantity missing"), inline=TRUE)
+          radioButtons('protPCAColor', 'Color by', choices=c("Group", "Batch"), inline=TRUE)
         ),
         box(
-          radioButtons('peptMDSColor', 'Color MDS by', choices=c("Group", "Quantity missing"), inline=TRUE)
+          radioButtons('peptPCAColor', 'Color by', choices=c("Group", "Batch"), inline=TRUE)
         )
       ),
       fluidRow(
@@ -134,8 +134,8 @@ body <- dashboardBody(
             plotOutput("filtProtHist")
           ),
           tabPanel(
-            "MDS",
-            plotOutput("filtProtMDS")
+            "PCA",
+            plotOutput("filtProtPCA")
           )
         ),
         tabBox(
@@ -149,8 +149,8 @@ body <- dashboardBody(
             plotOutput("filtPeptHist")
           ),
           tabPanel(
-            "MDS",
-            plotOutput("filtPeptMDS")
+            "PCA",
+            plotOutput("filtPeptPCA")
           )
         ) 
       ),
@@ -186,8 +186,9 @@ body <- dashboardBody(
             selectInput("normMethodPCA", "Normalization Method:", 
                         c("Log2", "Median", "Mean", "VSN",
                           "Quantile", "Cyclic Loess", "RLR", "Global Intensity")),
-            selectInput("groupBatchPCA", "Color code Group or Batch:", 
-                        c("Group", "Batch")),
+            radioButtons('groupBatchPCA', 'Color by', choices=c("Group", "Batch"), inline=TRUE),
+            # selectInput("groupBatchPCA", "Color code Group or Batch:", 
+            #             c("Group", "Batch")),
             plotOutput("pcaPlot")
           ),
           tabPanel(
@@ -506,61 +507,43 @@ server <- function(input, output, session) {
     hist(longdat, main="Histogram of Peptides", breaks=breakSeq, xlab="Corrected Intensity", ylab="Counts")
   })
   
-  # MDS Proteins
-  output$filtProtMDS <- renderPlot({
+  # PCA Proteins
+  output$filtProtPCA <- renderPlot({
     proteins <- proteinsSampleFiltered()
     meta <- metaDataFiltered()
     
     if(is.null(proteins) | is.null(meta)) return(NULL)
     
-    sampleCols = meta$Peptide.Sample.Names
+    data = proteins[, meta$Peptide.Sample.Names]
+    data = data[!apply(is.na(data), 1, any),]
+    pca = stats::prcomp(t(data))
+    
     if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Peptide.Sample.Names
+      rownames(meta) = meta$Peptide.Sample.Names
     } else {
-      sampleLabels = meta$Custom.Sample.Names
+      rownames(meta) = meta$Custom.Sample.Names
     }
-    d <- cmdscale(dist(t(proteins[, sampleCols])))
-    if(input$protMDSColor=="Group") {
-      plot(d, type="n", xlab="", ylab="", main="MDS of Proteins, Colored by Group")
-      text(d, labels = sampleLabels, col=colorGroup(meta$Group)[meta$Group])
-      legend("top", inset=c(0, -.085), levels(as.factor(meta$Group)),
-             bty="n", xpd=TRUE,
-             col=colorGroup(meta$Group), pch=15, horiz=TRUE)
-    } else {
-      plot(d, type="n", xlab="", ylab="", main="MDS of Peptides, Colored by Missing")
-      missing <- colSums(is.na(proteins[, sampleCols]))
-      colPalette <- colorRampPalette(c('blue','red'))
-      missingCol <- colPalette(5)[as.numeric(cut(missing,breaks = 5))]
-      text(d, labels = sampleLabels, col=missingCol)
-    }
+    
+    ggplot2::autoplot(pca, data = meta, colour = input$protPCAColor, x = 1, y = 2, label  = TRUE)
   })
   
-  # MDS Peptides
-  output$filtPeptMDS <- renderPlot({
+  # PCA Peptides
+  output$filtPeptPCA <- renderPlot({
     peptides <- peptidesSampleFiltered()
     meta <- metaDataFiltered()
     
     if(is.null(peptides) | is.null(meta)) return(NULL)
     
-    sampleCols = meta$Peptide.Sample.Names
+    data = peptides[, meta$Peptide.Sample.Names]
+    data = data[!apply(is.na(data), 1, any),]
+    pca = stats::prcomp(t(data))
+    
     if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Peptide.Sample.Names
+      rownames(meta) = meta$Peptide.Sample.Names
     } else {
-      sampleLabels = meta$Custom.Sample.Names
+      rownames(meta) = meta$Custom.Sample.Names
     }
-    d <- cmdscale(dist(t(peptides[, sampleCols])))
-    if(input$peptMDSColor=="Group") {
-      plot(d, type="n", xlab="", ylab="", main="MDS of Peptides, Colored by Group")
-      text(d, labels = sampleLabels, col=colorGroup(meta$Group)[meta$Group])
-      legend("top", inset=c(0, -.085), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
-             col=colorGroup(meta$Group), pch=15, horiz=TRUE)
-    } else {
-      plot(d, type="n", xlab="", ylab="", main="MDS of Peptides, Colored by Missing")
-      missing <- colSums(is.na(peptides[, sampleCols]))
-      colPalette <- colorRampPalette(c('blue','red'))
-      missingCol <- colPalette(5)[as.numeric(cut(missing,breaks = 5))]
-      text(d, labels = sampleLabels, col=missingCol)
-    }
+    ggplot2::autoplot(pca, data = meta, colour = input$peptPCAColor, x = 1, y = 2, label  = TRUE)    
   })
   
   
@@ -624,6 +607,7 @@ server <- function(input, output, session) {
     meta <- metaDataFiltered()
     
     if(is.null(normList) | is.null(meta)) return(NULL)
+    # save(normList, meta, file = "savedData.Rdata")
     
     if(meta$Custom.Sample.Name[1] == ""){
       sampleLabels = meta$Peptide.Sample.Names
