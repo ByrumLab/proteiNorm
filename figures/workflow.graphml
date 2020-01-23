@@ -23,10 +23,10 @@
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="44.69921875" x="-4.849609375" xml:space="preserve" y="-22.701171875">Peptide<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.5" nodeRatioX="0.0" nodeRatioY="-0.5" offsetX="0.0" offsetY="-4.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:StyleProperties>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.line.color" value="#000000"/>
+            <y:Property class="com.yworks.yfiles.bpmn.view.DataObjectTypeEnum" name="com.yworks.bpmn.dataObjectType" value="DATA_OBJECT_TYPE_PLAIN"/>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill2" value="#d4d4d4cc"/>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill" value="#ffffffe6"/>
             <y:Property class="com.yworks.yfiles.bpmn.view.BPMNTypeEnum" name="com.yworks.bpmn.type" value="ARTIFACT_TYPE_DATA_OBJECT"/>
-            <y:Property class="com.yworks.yfiles.bpmn.view.DataObjectTypeEnum" name="com.yworks.bpmn.dataObjectType" value="DATA_OBJECT_TYPE_PLAIN"/>
           </y:StyleProperties>
         </y:GenericNode>
       </data>
@@ -40,10 +40,10 @@
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.701171875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="42.021484375" x="-3.5107421875" xml:space="preserve" y="-22.701171875">Protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.5" nodeRatioX="0.0" nodeRatioY="-0.5" offsetX="0.0" offsetY="-4.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:StyleProperties>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.line.color" value="#000000"/>
+            <y:Property class="com.yworks.yfiles.bpmn.view.DataObjectTypeEnum" name="com.yworks.bpmn.dataObjectType" value="DATA_OBJECT_TYPE_PLAIN"/>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill2" value="#d4d4d4cc"/>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill" value="#ffffffe6"/>
             <y:Property class="com.yworks.yfiles.bpmn.view.BPMNTypeEnum" name="com.yworks.bpmn.type" value="ARTIFACT_TYPE_DATA_OBJECT"/>
-            <y:Property class="com.yworks.yfiles.bpmn.view.DataObjectTypeEnum" name="com.yworks.bpmn.dataObjectType" value="DATA_OBJECT_TYPE_PLAIN"/>
           </y:StyleProperties>
         </y:GenericNode>
       </data>
@@ -68,10 +68,10 @@
 Protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="-0.5" labelRatioY="-0.5" nodeRatioX="0.5" nodeRatioY="-0.29288338068181474" offsetX="4.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:StyleProperties>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.line.color" value="#000000"/>
+            <y:Property class="com.yworks.yfiles.bpmn.view.DataObjectTypeEnum" name="com.yworks.bpmn.dataObjectType" value="DATA_OBJECT_TYPE_PLAIN"/>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill2" value="#d4d4d4cc"/>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill" value="#ffffffe6"/>
             <y:Property class="com.yworks.yfiles.bpmn.view.BPMNTypeEnum" name="com.yworks.bpmn.type" value="ARTIFACT_TYPE_DATA_OBJECT"/>
-            <y:Property class="com.yworks.yfiles.bpmn.view.DataObjectTypeEnum" name="com.yworks.bpmn.dataObjectType" value="DATA_OBJECT_TYPE_PLAIN"/>
           </y:StyleProperties>
         </y:GenericNode>
       </data>
@@ -139,16 +139,15 @@ Protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
 Protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.5" nodeRatioX="0.0" nodeRatioY="-0.5" offsetX="0.0" offsetY="-4.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
           <y:StyleProperties>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.line.color" value="#000000"/>
+            <y:Property class="com.yworks.yfiles.bpmn.view.DataObjectTypeEnum" name="com.yworks.bpmn.dataObjectType" value="DATA_OBJECT_TYPE_PLAIN"/>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill2" value="#d4d4d4cc"/>
             <y:Property class="java.awt.Color" name="com.yworks.bpmn.icon.fill" value="#ffffffe6"/>
             <y:Property class="com.yworks.yfiles.bpmn.view.BPMNTypeEnum" name="com.yworks.bpmn.type" value="ARTIFACT_TYPE_DATA_OBJECT"/>
-            <y:Property class="com.yworks.yfiles.bpmn.view.DataObjectTypeEnum" name="com.yworks.bpmn.dataObjectType" value="DATA_OBJECT_TYPE_PLAIN"/>
           </y:StyleProperties>
         </y:GenericNode>
       </data>
     </node>
     <node id="n10">
-      <data key="d5"/>
       <data key="d6">
         <y:SVGNode>
           <y:Geometry height="64.96826171875" width="56.554100036621094" x="210.0" y="796.765869140625"/>
@@ -170,7 +169,6 @@ Protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
       </data>
     </node>
     <node id="n11">
-      <data key="d5"/>
       <data key="d6">
         <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
           <y:Geometry height="152.0" width="97.91666666666652" x="468.04166666666674" y="411.75"/>
@@ -202,7 +200,6 @@ Missing values<y:LabelModel><y:ErdAttributesNodeLabelModel/></y:LabelModel><y:Mo
       </data>
     </node>
     <node id="n13">
-      <data key="d5"/>
       <data key="d6">
         <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
           <y:Geometry height="152.0" width="97.91666666666652" x="311.04166666666674" y="411.75"/>
@@ -224,7 +221,6 @@ Global Intensity<y:LabelModel><y:ErdAttributesNodeLabelModel/></y:LabelModel><y:
       </data>
     </node>
     <node id="n14">
-      <data key="d5"/>
       <data key="d6">
         <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
           <y:Geometry height="137.0" width="97.91666666666652" x="311.04166666666674" y="593.75"/>
@@ -245,12 +241,11 @@ Zero<y:LabelModel><y:ErdAttributesNodeLabelModel/></y:LabelModel><y:ModelParamet
       </data>
     </node>
     <node id="n15">
-      <data key="d5"/>
       <data key="d6">
         <y:ShapeNode>
           <y:Geometry height="65.625" width="125.0" x="454.5" y="605.75"/>
           <y:Fill hasColor="false" transparent="false"/>
-          <y:BorderStyle hasColor="false" raised="false" type="line" width="1.0"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="60.5" y="30.8125">
             <y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
@@ -264,7 +259,6 @@ Zero<y:LabelModel><y:ErdAttributesNodeLabelModel/></y:LabelModel><y:ModelParamet
       </data>
     </node>
     <node id="n16">
-      <data key="d5"/>
       <data key="d6">
         <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
           <y:Geometry height="137.0" width="97.91666666666652" x="311.04166666666674" y="760.75"/>
@@ -281,6 +275,36 @@ Wilcox
             <y:Property class="java.lang.Boolean" name="y.view.ShadowNodePainter.SHADOW_PAINTING" value="true"/>
           </y:StyleProperties>
         </y:GenericNode>
+      </data>
+    </node>
+    <node id="n17">
+      <data key="d5"/>
+      <data key="d6">
+        <y:ImageNode>
+          <y:Geometry height="48.0" width="48.0" x="493.0" y="827.3125"/>
+          <y:Fill color="#CCCCFF" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="sandwich" modelPosition="s" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="22.0" y="52.0"/>
+          <y:Image alphaImage="true" refid="4"/>
+        </y:ImageNode>
+      </data>
+    </node>
+    <node id="n18">
+      <data key="d6">
+        <y:ShapeNode>
+          <y:Geometry height="64.96826171875" width="80.0" x="477.95833333333326" y="818.5"/>
+          <y:Fill hasColor="false" transparent="false"/>
+          <y:BorderStyle color="#000000" raised="false" type="line" width="1.0"/>
+          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="38.0" y="30.484130859375">
+            <y:LabelModel>
+              <y:SmartNodeLabelModel distance="4.0"/>
+            </y:LabelModel>
+            <y:ModelParameter>
+              <y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/>
+            </y:ModelParameter>
+          </y:NodeLabel>
+          <y:Shape type="roundrectangle"/>
+        </y:ShapeNode>
       </data>
     </node>
     <edge id="e0" source="n0" target="n2">
@@ -356,7 +380,6 @@ Wilcox
       </data>
     </edge>
     <edge id="e7" source="n5" target="n13">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
@@ -367,7 +390,6 @@ Wilcox
       </data>
     </edge>
     <edge id="e8" source="n13" target="n14">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
@@ -378,7 +400,6 @@ Wilcox
       </data>
     </edge>
     <edge id="e9" source="n14" target="n9">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
@@ -389,7 +410,6 @@ Wilcox
       </data>
     </edge>
     <edge id="e10" source="n13" target="n11">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
@@ -400,7 +420,6 @@ Wilcox
       </data>
     </edge>
     <edge id="e11" source="n11" target="n15">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
@@ -411,7 +430,6 @@ Wilcox
       </data>
     </edge>
     <edge id="e12" source="n14" target="n16">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
@@ -422,7 +440,6 @@ Wilcox
       </data>
     </edge>
     <edge id="e13" source="n10" target="n16">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
@@ -433,10 +450,31 @@ Wilcox
       </data>
     </edge>
     <edge id="e14" source="n16" target="n12">
-      <data key="d9"/>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="-4.185999999999808" sy="-54.625" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e15" source="n16" target="n18">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-0.5" sy="21.734130859375" tx="0.0" ty="0.0"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:BendStyle smoothed="false"/>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e16" source="n12" target="n18">
+      <data key="d9"/>
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="standard"/>
           <y:BendStyle smoothed="false"/>
@@ -568,6 +606,19 @@ mJ93RNk7DZGQ4Fa/N11hRyJwA4gpbswSGwiKCdwS466S25glOjBLjIlWPOLhORUP25gxwLQHhfyP&#13
 &lt;/g&gt;
 &lt;/svg&gt;
 </y:Resource>
+      <y:Resource id="4" type="java.awt.image.BufferedImage" xml:space="preserve">iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAChUlEQVR4Xu2Y3WoUQRCFK3oRf99D&#13;
+EK/yOLkJ+ASC4JVk8S/BV4hgxBuvfQcRUbwQIuIPRkXiA0gkhETrZLanq2t6p6t3Z92eMB8cAj01&#13;
+s+fUzHT3hIjor1AvGQIsmiHAohkCzJnLrE3Wd9Yxa5d1l3XBFZQcAObfUujR6SXrPIpKDvCQmsal&#13;
+1lGkB0sK85O8nxusZdZNMfYJRdp4KQHOUugH5gEeGzd2gAFtvJQAQN4BdB7mb4mxjygqzbRkg5qN&#13;
+lbqNopIDXGT9oqZx6AXrHIpKDrBCob9D1hfWiMZTKOgyADr2gPWNqkUHf++RWHQyeU7e2zN1rKar&#13;
+ADD/msLrOb2i/BCy+2jG1fCwp6sA6Lw2LoXlPwdT94H+oWnD4HFx58YWna++NIm5+0AbnzYAfsid&#13;
+G1t0jsZjFszdB9r4tAGwW3Tnxhad3bqynazug1lMS1LvAPSYqpe9jazugy4CLLGeUtNwTDs0uavZ&#13;
+3QddBLhO4XXwQuOZx6KzztpWx/dZa9Qku/tg1gDXWH/IX2MrPFyzRpVx+XvbVO13flA4CZi7D2YJ&#13;
+cIn1gfz570gs8RFg6j2FvxkTArVdJ2DaAPq5/826ElTEwUv8hJqmtUbj+iT6xElh0G3MNO7jWu7V&#13;
+oVVfmgTh98ifG1v4PtfVCbTxWACYfyOOaT3ypSbOUHh+bOE7+dqyoM04SVJz/B1fasb0tWVhkmlJ&#13;
+ap+D6TIX/K9HN0Lq5GvLgiVAap9jvt2Ctsey/tqyYAmQ2ueYb7cCM9J9qvZJbuEbUcYUCiwBUu+A&#13;
++XbPA0uAtq+trNs9DywBQCe3ex7ojlrCFIU2PgT43/TStGQIsGiGAIvmVAXooxoDfVNjoFf6B1zx&#13;
+YeDGJ5d7AAAAAElFTkSuQmCC</y:Resource>
     </y:Resources>
   </data>
 </graphml>
