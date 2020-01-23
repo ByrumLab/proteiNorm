@@ -332,7 +332,7 @@ densityLog2Ratio = function(normList, groups){
   minX = 0.5 * min(unlist(min(density(log2Ratio[["VSN"]], na.rm = T)$x)))
   maxX = 0.5 * max(unlist(max(density(log2Ratio[["VSN"]], na.rm = T)$x)))
   
-  plot(NA, xlim = c(minX, maxX), ylim = c(0,maxY), xlab = "Log2 ratio", ylab = "Density")
+  plot(NA, xlim = c(minX, maxX), ylim = c(0,maxY), xlab = "Log2 ratio", ylab = "Density", main = "Log2-ratio")
   abline(v = 0, lty = 2, col = "grey")
   
   for(method in names(normList)){
