@@ -208,11 +208,6 @@ body <- dashboardBody(
             plotOutput("cor_boxplolt")
           ),
           tabPanel(
-            "Missing Values",
-            checkboxInput("showAllProtein_NA_heatmap", "Show all protein", value = FALSE, width = NULL),
-            plotOutput("NA_heatmap")
-          ),
-          tabPanel(
             "Correlation heatmap",
             selectInput("normMethodCorrelationHeatmap", "Normalization Method:", 
                         c("Log2", "Median", "Mean", "VSN",
@@ -222,6 +217,11 @@ body <- dashboardBody(
           tabPanel(
             "LogRatio density",
             plotOutput("logRatio_density")
+          ),
+          tabPanel(
+            "Missing Values",
+            checkboxInput("showAllProtein_NA_heatmap", "Show all protein", value = FALSE, width = NULL),
+            plotOutput("NA_heatmap")
           )
         )
       )
