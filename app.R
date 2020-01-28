@@ -15,6 +15,8 @@ library(shinyFiles) # save to button
 library(parallel) # detect cores
 library(rJava) # finding screen resolution
 library(ggfortify) # PCA autoplot
+library(NormalyzerDE) # PCA autoplot
+
 
 
 source("normFunctions.R")
