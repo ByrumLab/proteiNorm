@@ -239,7 +239,7 @@ heatmapGroup = function(groups, batch, missing, groupCol, batchCol, sampleLabels
   hm_group = Heatmap(missing_groupSorted+0, col = c("white", "black"), column_names_side = "top",  column_title = "Sorted by Groups",
                      show_row_names = FALSE, show_column_names = TRUE, name = "Missing values pattern", 
                      column_names_gp = gpar(fontsize = 16), heatmap_legend_param = list(at = c(0, 1), labels = c("Missing value", "Valid value")), 
-                     top_annotation = ColAnn, cluster_columns = FALSE, column_labels = sampleLabels)
+                     top_annotation = ColAnn, cluster_columns = FALSE, column_labels = sampleLabels[orderGroups])
   # draw(hm_group, heatmap_legend_side = "right", annotation_legend_side = "right")
   return(hm_group)
 }
@@ -265,7 +265,7 @@ heatmapBatch = function(groups, batch, missing, groupCol, batchCol, sampleLabels
   hm_batch = Heatmap(missing_batchSorted+0, col = c("white", "black"), column_names_side = "top",  column_title = "Sorted by Batch",
                      show_row_names = FALSE, show_column_names = TRUE, name = "Missing values pattern", 
                      column_names_gp = gpar(fontsize = 16), heatmap_legend_param = list(at = c(0, 1), labels = c("Missing value", "Valid value")), 
-                     top_annotation = ColAnn, cluster_columns = FALSE, column_labels = sampleLabels)
+                     top_annotation = ColAnn, cluster_columns = FALSE, column_labels = sampleLabels[orderBatch])
   # draw(hm_group, heatmap_legend_side = "right", annotation_legend_side = "right")
   return(hm_batch)
 }

@@ -98,7 +98,7 @@ body <- dashboardBody(
           fileInput("peptFile", "Peptides"),
           
           useShinyjs(),
-          shinySaveButton("savePep2Pro", "Save file", "Save file as ...", filetype=list(txt="txt")),
+          shinySaveButton("savePep2Pro", "Filter peptides", "Save file as ...", filetype=list(txt="txt")),
           shinyjs::hidden(p(id = "textFilteringPeptides", "Processing...")),
           
           # useShinyjs(),
@@ -315,9 +315,12 @@ server <- function(input, output, session) {
       shinyjs::show("textFilteringPeptides")
       peptides = peptides()
       cat("Filtering peptides (can take a few minutes) ...")
+      start = Sys.time()
       filteredProteins = filterPeptides(peptides)
       write.table(filteredProteins, file = as.character(fileinfo$datapath), sep = "\t", row.names = F) #, col.names=NA
-      cat(" done\n")
+      cat(" done (")
+      cat(difftime(Sys.time(), start)) 
+      cat(") \n")
       shinyjs::enable("savePep2Pro")
       shinyjs::hide("textFilteringPeptides")
     }
@@ -452,9 +455,11 @@ server <- function(input, output, session) {
     } else {
       sampleLabels = meta$Custom.Sample.Names
     }
+    par(mar=c(11,5,4,2))
     boxplot(proteins[, sampleCols], outline=FALSE, col=colorGroup(meta$Group)[meta$Group], main="Boxplot of Proteins",
-            xlab="Sample", ylab="Corrected Intensity", names=sampleLabels, las = 2)
-    legend("top", inset=c(0, -.085), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
+            xlab="", ylab="", names=sampleLabels, las = 2)
+    mtext(side = 2, text = "Corrected Intensity", line = 4)
+    legend("top", inset=c(0, -.14), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
            col=colorGroup(meta$Group), pch=15, horiz=TRUE)
   })
   
@@ -471,9 +476,11 @@ server <- function(input, output, session) {
     } else {
       sampleLabels = meta$Custom.Sample.Names
     }
+    par(mar=c(11,5,4,2))
     boxplot(peptides[, sampleCols], outline=FALSE, col=colorGroup(meta$Group)[meta$Group], main="Boxplot of Peptides",
-            xlab="Sample", ylab="Corrected Intensity", names=sampleLabels, las = 2)
-    legend("top", inset=c(0, -.085), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
+            xlab="", ylab="", names=sampleLabels, las = 2)
+    mtext(side = 2, text = "Corrected Intensity", line = 4)
+    legend("top", inset=c(0, -.14), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
            col=colorGroup(meta$Group), pch=15, horiz=TRUE)
   })
   
@@ -617,7 +624,7 @@ server <- function(input, output, session) {
       sampleLabels = meta$Custom.Sample.Names
     }
     
-    par(mfrow = c(3,3), mar=c(8,8,3,1))
+    par(mfrow = c(3,3), mar=c(10,8,3,1))
     for(i in names(normList)){
       barplot(colSums(normList[[i]], na.rm = T), main = i, las = 2, yaxt="n", cex.main = 1.5, col = plasma(ncol(normList[[i]])), names.arg = sampleLabels)
       axis(side = 2, cex.axis=1.5, las = 2)
@@ -724,7 +731,6 @@ server <- function(input, output, session) {
     } else {
       sampleLabels = meta$Custom.Sample.Names
     }
-    
     heatmapMissing(normList[["Log2"]], groups, batch, sampleLabels, input$showAllProtein_NA_heatmap)
   }, height = round(0.7 * screenHeight))
   
@@ -767,6 +773,7 @@ server <- function(input, output, session) {
       groups <- meta$Group
       batch <- meta$Batch
       normData <- normList[[input$normMethod]]
+      if(meta$Custom.Sample.Name[1] != "") colnames(normData) = meta$Custom.Sample.Names
       if(input$imputationMethod == "No Imputation"){
         normDataAnno = cbind(anno, normData)
         colnames(normDataAnno)[seq_along(proteinAnnotationColums)] = proteinAnnotationColums
