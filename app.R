@@ -101,11 +101,6 @@ body <- dashboardBody(
           shinySaveButton("savePep2Pro", "Filter peptides", "Save file as ...", filetype=list(txt="txt")),
           shinyjs::hidden(p(id = "textFilteringPeptides", "Processing...")),
           
-          # useShinyjs(),
-          # textInput("saveProteinFilename", "Save filtered Proteins to", value="proteinGroups_filtered.txt"),
-          # actionButton("saveButton", "Save filtered Proteins"),
-          # shinyjs::hidden(p(id = "textFilteringPeptides", "Processing...")),
-          
           fileInput("protFile", "Proteins")
         )
       ),
@@ -263,6 +258,7 @@ body <- dashboardBody(
       # tweaks,
       fluidRow(column(width = 7, controlsDAtest)),
       
+      "Run DAtest (requires no NA values):",
       shiny::actionButton(inputId = "goButtonDAtest", label = "Go!", width = '100%', style='font-size:150%'),
       
       div(DTOutput("DAtestResults"), style = "overflow-y: scroll;overflow-x: scroll;"),
@@ -277,6 +273,7 @@ body <- dashboardBody(
         selectInput(inputId = "DAtest4power", label = "Estimating statistical power for:", choices = unname(DAtestTestNames[eval(formals(testDA)$tests)]))
       )),
       
+      "Run powerDA (requires no NA values):",
       shiny::actionButton(inputId = "goButtonDAPower", label = "Go!", width = '100%', style='font-size:150%'),
       
       div(DTOutput("DAtestPowerResults"), style = "overflow-y: scroll;overflow-x: scroll;"),
@@ -294,6 +291,9 @@ ui <- dashboardPage(header, sidebar, body)
 server <- function(input, output, session) {
   peptideAnnotationColums = c("id", "Protein.group.IDs", "Leading.razor.protein", "Gene.names")
   proteinAnnotationColums = c("id")
+  
+  shinyjs::disable("goButtonDAtest")
+  shinyjs::disable("goButtonDAPower")
   
   peptides <- reactive({
     peptFile <- input$peptFile
@@ -580,6 +580,12 @@ server <- function(input, output, session) {
     normList[["RLR"]] <- rlrNorm(normList[["Log2"]])
     normList[["Global Intensity"]] <- giNorm(normList[["Log2"]])
     
+    # enable DAtest and powerDA buttons if no NA's in data
+    if(!any(is.na(normList[["Log2"]]))){
+      shinyjs::enable("goButtonDAtest")
+      shinyjs::enable("goButtonDAPower")
+    }
+    
     normList
   })
   
@@ -606,8 +612,18 @@ server <- function(input, output, session) {
     }
   })
   
-  
-  
+  observeEvent(input$imputationMethod, {
+    choice = input$imputationMethod
+    req(normProteins())
+    normList <- normProteins()
+    if(any(is.na(normList[[input$normMethod]])) & choice == "No Imputation"){
+      shinyjs::disable("goButtonDAtest")
+      shinyjs::disable("goButtonDAPower")
+    } else {
+      shinyjs::enable("goButtonDAtest")
+      shinyjs::enable("goButtonDAPower")
+    }
+  })
   
   
   output$totalIntensity_barplot <- renderPlot({
@@ -638,7 +654,7 @@ server <- function(input, output, session) {
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
-
+    
     data = normList[[input$normMethodPCA]]
     data = data[!apply(is.na(data), 1, any),]
     pca = stats::prcomp(t(data))
@@ -796,7 +812,7 @@ server <- function(input, output, session) {
     idx = meta$Group %in% c(input$groupSelection1, input$groupSelection2)
     normData = normData[,idx]
     meta = meta[idx,]
-
+    
     groups <- meta$Group
     batch <- meta$Batch
     
