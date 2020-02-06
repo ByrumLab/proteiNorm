@@ -55,7 +55,6 @@ outlier = function(vector){
 
 
 filterPeptides = function(peptides){
-  save(peptides, file = "peptides.Rdata")
   peptides = as.data.frame(peptides)
   peptides$proteinIDs = peptides$Leading.razor.protein
 
