@@ -55,14 +55,10 @@ outlier = function(vector){
 
 
 filterPeptides = function(peptides){
+  save(peptides, file = "peptides.Rdata")
   peptides = as.data.frame(peptides)
-  # peptides$proteinIDs = unlist(lapply(strsplit(peptides$Protein.group.IDs, ";"), function(x) x[1]))
-  peptides$proteinIDs = paste(peptides$Leading.razor.protein, 
-    unlist(lapply(strsplit(peptides$Gene.names, ";"), function(x) x[1])), 
-    sep = "_")
-  
-  # B5MCB4
-  
+  peptides$proteinIDs = peptides$Leading.razor.protein
+
   colmnNames = extractColumnNames(colnames(peptides))[["rawDataCols"]]
   FilteredProteins = NULL
   for(i in unique(peptides$proteinIDs)){
