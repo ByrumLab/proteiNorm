@@ -22,7 +22,7 @@ library(NormalyzerDE) # PCA autoplot
 source("normFunctions.R")
 source("functions.R")
 
-# Sets maximum upload size to 100MB
+# Sets maximum upload size to 5GB
 options(shiny.maxRequestSize = 5000*1024^2)
 options(stringsAsFactors=FALSE)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -248,12 +248,8 @@ body <- dashboardBody(
       numericInput(inputId = "DAtestCores", 
                    label = "Number of cores to use for parallel computing", 
                    value = min(detectCores()-1, 10), min = 1, step = 1),
-      selectInput(inputId = "groupSelection1", 
-                  label = "Group 1",
-                  choices = ""),
-      selectInput(inputId = "groupSelection2", 
-                  label = "Group 2",
-                  choices = ""),
+      checkboxGroupInput(inputId = "groupSelection", 
+                         label = "Group Selection"),
       
       # tweaks,
       fluidRow(column(width = 7, controlsDAtest)),
@@ -340,16 +336,14 @@ server <- function(input, output, session) {
   ### Creates a Dataframe that will be used to edit the metaData ####
   ### Creates handsontable where metaData1() will be edited ####
   metaData1 <- reactive({
-    req(peptides())
+    # req(peptides())
     req(proteins())
-    tempTable = data.frame(Peptide.Sample.Names = colnames(peptides())[-seq_along(peptideAnnotationColums)],
-                           Protein.Sample.Names = colnames(proteins())[-seq_along(proteinAnnotationColums)],
+    tempTable = data.frame(Protein.Sample.Names = colnames(proteins())[-seq_along(proteinAnnotationColums)],
                            Custom.Sample.Names = "",
                            Group = "",
                            Batch = "")
     
     rhandsontable(tempTable) %>% 
-      hot_col("Peptide.Sample.Names", readOnly = T) %>% 
       hot_col("Protein.Sample.Names", readOnly = T)
   })
   #### Outputs the Rhandsontable ####
@@ -361,7 +355,7 @@ server <- function(input, output, session) {
   }) 
   
   observe({
-    req(peptides())
+    # req(peptides())
     req(proteins())
     req(metaData1())
     req(input$metaData)
@@ -370,28 +364,27 @@ server <- function(input, output, session) {
     updateCheckboxGroupInput(session, inputId = "sampleCheckbox",
                              choices = #c("1","2","3")
                                if(meta$Custom.Sample.Name[1] == ""){
-                                 meta$Peptide.Sample.Names
+                                 meta$Protein.Sample.Names
                                } else {
                                  meta$Custom.Sample.Names
                                })
   })
   
   observe({
-    req(peptides())
+    # req(peptides())
     req(proteins())
     req(metaData1())
     req(input$metaData)
     meta = metaData2()
     
     if(meta$Custom.Sample.Name[1] == ""){
-      groups = unique(meta$Group[!meta$Peptide.Sample.Names %in% input$sampleCheckbox])
+      groups = unique(meta$Group[!meta$Protein.Sample.Names %in% input$sampleCheckbox])
     } else {
       groups = unique(meta$Group[!meta$Custom.Sample.Names %in% input$sampleCheckbox])
     }
-    updateSelectInput(session, inputId = "groupSelection1", choices = groups,
-                      selected = groups[1])
-    updateSelectInput(session, inputId = "groupSelection2", choices = groups,
-                      selected = ifelse(length(groups)>1, groups[2], groups[1]))
+    updateCheckboxGroupInput(session, inputId = "groupSelection", 
+                             choices = groups,
+                             selected = c(groups[1],groups[2]))
   })
   
   
@@ -402,7 +395,7 @@ server <- function(input, output, session) {
     peptides = peptides()
     meta = metaData2()
     if(meta$Custom.Sample.Name[1] == ""){
-      filteredPeptides = peptides[,c(rep(TRUE, length(peptideAnnotationColums)), !meta$Peptide.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep annotation
+      filteredPeptides = peptides[,c(rep(TRUE, length(peptideAnnotationColums)), !meta$Protein.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep annotation
     } else {
       filteredPeptides = peptides[,c(rep(TRUE, length(peptideAnnotationColums)), !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
     }
@@ -417,7 +410,7 @@ server <- function(input, output, session) {
     proteins = proteins()
     meta = metaData2()
     if(meta$Custom.Sample.Name[1] == ""){
-      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), !meta$Peptide.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep annotation
+      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), !meta$Protein.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep annotation
     } else {
       filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
     }
@@ -432,7 +425,7 @@ server <- function(input, output, session) {
     req(input$metaData)
     meta = metaData2()
     if(meta$Custom.Sample.Name[1] == ""){
-      filteredMetadata = meta[!meta$Peptide.Sample.Names %in% input$sampleCheckbox,]
+      filteredMetadata = meta[!meta$Protein.Sample.Names %in% input$sampleCheckbox,]
     } else {
       filteredMetadata = meta[!meta$Custom.Sample.Names %in% input$sampleCheckbox,]
     }
@@ -449,9 +442,9 @@ server <- function(input, output, session) {
     
     if(is.null(proteins) | is.null(meta)) return(NULL)
     
-    sampleCols = meta$Peptide.Sample.Names
+    sampleCols = meta$Protein.Sample.Names
     if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Peptide.Sample.Names
+      sampleLabels = meta$Protein.Sample.Names
     } else {
       sampleLabels = meta$Custom.Sample.Names
     }
@@ -470,9 +463,9 @@ server <- function(input, output, session) {
     
     if(is.null(peptides) | is.null(meta)) return(NULL)
     
-    sampleCols = meta$Peptide.Sample.Names
+    sampleCols = meta$Protein.Sample.Names
     if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Peptide.Sample.Names
+      sampleLabels = meta$Protein.Sample.Names
     } else {
       sampleLabels = meta$Custom.Sample.Names
     }
@@ -491,7 +484,7 @@ server <- function(input, output, session) {
     
     if(is.null(proteins) | is.null(meta)) return(NULL)
     
-    sampleCols = meta$Peptide.Sample.Names
+    sampleCols = meta$Protein.Sample.Names
     longdat <- unlist(proteins[, sampleCols])
     densityCutoff <- findDensityCutoff(longdat)
     longdat <- longdat[longdat < densityCutoff]
@@ -507,7 +500,7 @@ server <- function(input, output, session) {
     
     if(is.null(peptides) | is.null(meta)) return(NULL)
     
-    sampleCols = meta$Peptide.Sample.Names
+    sampleCols = meta$Protein.Sample.Names
     longdat <- unlist(peptides[, sampleCols])
     densityCutoff <- findDensityCutoff(longdat)
     longdat <- longdat[longdat < densityCutoff]
@@ -523,12 +516,12 @@ server <- function(input, output, session) {
     
     if(is.null(proteins) | is.null(meta)) return(NULL)
     
-    data = proteins[, meta$Peptide.Sample.Names]
+    data = proteins[, meta$Protein.Sample.Names]
     data = data[!apply(is.na(data), 1, any),]
     pca = stats::prcomp(t(data))
     
     if(meta$Custom.Sample.Name[1] == ""){
-      rownames(meta) = meta$Peptide.Sample.Names
+      rownames(meta) = meta$Protein.Sample.Names
     } else {
       rownames(meta) = meta$Custom.Sample.Names
     }
@@ -543,12 +536,12 @@ server <- function(input, output, session) {
     
     if(is.null(peptides) | is.null(meta)) return(NULL)
     
-    data = peptides[, meta$Peptide.Sample.Names]
+    data = peptides[, meta$Protein.Sample.Names]
     data = data[!apply(is.na(data), 1, any),]
     pca = stats::prcomp(t(data))
     
     if(meta$Custom.Sample.Name[1] == ""){
-      rownames(meta) = meta$Peptide.Sample.Names
+      rownames(meta) = meta$Protein.Sample.Names
     } else {
       rownames(meta) = meta$Custom.Sample.Names
     }
@@ -564,7 +557,7 @@ server <- function(input, output, session) {
   
   
   normProteins <- reactive({
-    sampleCols = metaDataFiltered()$Peptide.Sample.Names
+    sampleCols = metaDataFiltered()$Protein.Sample.Names
     proteins <- proteinsSampleFiltered()[,sampleCols]
     if(is.null(proteins)) return(NULL)
     
@@ -635,7 +628,7 @@ server <- function(input, output, session) {
     # save(normList, meta, file = "savedData.Rdata")
     
     if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Peptide.Sample.Names
+      sampleLabels = meta$Protein.Sample.Names
     } else {
       sampleLabels = meta$Custom.Sample.Names
     }
@@ -659,7 +652,7 @@ server <- function(input, output, session) {
     data = data[!apply(is.na(data), 1, any),]
     pca = stats::prcomp(t(data))
     if(meta$Custom.Sample.Name[1] == ""){
-      rownames(meta) = meta$Peptide.Sample.Names
+      rownames(meta) = meta$Protein.Sample.Names
     } else {
       rownames(meta) = meta$Custom.Sample.Names
     }
@@ -743,7 +736,7 @@ server <- function(input, output, session) {
     batch <- meta$Batch
     
     if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Peptide.Sample.Names
+      sampleLabels = meta$Protein.Sample.Names
     } else {
       sampleLabels = meta$Custom.Sample.Names
     }
@@ -759,7 +752,7 @@ server <- function(input, output, session) {
     batch <- meta$Batch
     
     if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Peptide.Sample.Names
+      sampleLabels = meta$Protein.Sample.Names
     } else {
       sampleLabels = meta$Custom.Sample.Names
     }
@@ -809,7 +802,7 @@ server <- function(input, output, session) {
     
     if(is.null(normList) | is.null(meta)) return(NULL)
     normData <- normList[[input$normMethod]]
-    idx = meta$Group %in% c(input$groupSelection1, input$groupSelection2)
+    idx = meta$Group %in% input$groupSelection
     normData = normData[,idx]
     meta = meta[idx,]
     
@@ -842,7 +835,7 @@ server <- function(input, output, session) {
     
     if(is.null(normList) | is.null(meta)) return(NULL)
     normData <- normList[[input$normMethod]]
-    idx = meta$Group %in% c(input$groupSelection1, input$groupSelection2)
+    idx = meta$Group %in% input$groupSelection
     normData = normData[,idx]
     meta = meta[idx,]
     
