@@ -96,7 +96,7 @@ body <- dashboardBody(
         box(
           title="Inputs", width=12,
           fileInput("peptFile", "Peptides"),
-          
+          selectInput(inputId = "PeptideFilterMethod", label = "Filtering method Peptide to Protein", choices = "Top3"),
           useShinyjs(),
           shinySaveButton("savePep2Pro", "Filter peptides", "Save file as ...", filetype=list(txt="txt")),
           shinyjs::hidden(p(id = "textFilteringPeptides", "Processing...")),
@@ -312,7 +312,7 @@ server <- function(input, output, session) {
       peptides = peptides()
       cat("Filtering peptides (can take a few minutes) ...")
       start = Sys.time()
-      filteredProteins = filterPeptides(peptides)
+      filteredProteins = filterPeptides(peptides = peptides, method = input$PeptideFilterMethod)
       write.table(filteredProteins, file = as.character(fileinfo$datapath), sep = "\t", row.names = F) #, col.names=NA
       cat(" done (")
       cat(difftime(Sys.time(), start)) 
@@ -451,7 +451,7 @@ server <- function(input, output, session) {
     par(mar=c(11,5,4,2))
     boxplot(proteins[, sampleCols], outline=FALSE, col=colorGroup(meta$Group)[meta$Group], main="Boxplot of Proteins",
             xlab="", ylab="", names=sampleLabels, las = 2)
-    mtext(side = 2, text = "Corrected Intensity", line = 4)
+    mtext(side = 2, text = "Intensity", line = 4)
     legend("top", inset=c(0, -.14), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
            col=colorGroup(meta$Group), pch=15, horiz=TRUE)
   })

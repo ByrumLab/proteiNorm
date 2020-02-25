@@ -54,10 +54,19 @@ outlier = function(vector){
 }
 
 
-filterPeptides = function(peptides){
+filterPeptides = function(peptides, method){
+  FilteredProteins = switch(method,
+                            Top3 = Top3Filter(peptides),
+                            stop("Method not found")
+  )
+  return(FilteredProteins)
+}
+
+
+Top3Filter = function(peptides){
   peptides = as.data.frame(peptides)
   peptides$proteinIDs = peptides$Leading.razor.protein
-
+  
   colmnNames = extractColumnNames(colnames(peptides))[["rawDataCols"]]
   FilteredProteins = NULL
   for(i in unique(peptides$proteinIDs)){
@@ -66,20 +75,15 @@ filterPeptides = function(peptides){
       FilteredProteins = rbind(FilteredProteins, tempProtein)
     } else {
       tempProtein[tempProtein == 0] = NA
-      tempProtein_log = log2(tempProtein)
-      tempOutliers = apply(tempProtein_log, 2, outlier)
-      keepPeptide = !apply(tempOutliers, 1, any, na.rm = T)
-      tempFilteredProtein = apply(tempProtein[keepPeptide,], 2, sum, na.rm = T)
-      FilteredProteins = rbind(FilteredProteins, tempFilteredProtein)
+      top3mean = apply(tempProtein, 2, function(x) mean(x[order(-x)][1:min(3, length(x))], na.rm = TRUE))
+      FilteredProteins = rbind(FilteredProteins, top3mean)
     }
   }
+  rownames(FilteredProteins) = unique(peptides$proteinIDs)
   FilteredProteins[FilteredProteins == 0] = NA
   FilteredProteins = cbind(id = unique(peptides$proteinIDs), FilteredProteins)
   return(FilteredProteins)
 }
-
-
-
 
 # ---
 # findDensityCutoff
@@ -315,7 +319,7 @@ densityLog2Ratio = function(normList, groups){
       for(g2 in (g1+1):length(groupList)){
         
         log2Ratio[[method]] = c(log2Ratio[[method]], rowMeans(normList[[method]][,groups == groupList[g1]], na.rm = T) - 
-          rowMeans(normList[[method]][,groups == groupList[g2]], na.rm = T))
+                                  rowMeans(normList[[method]][,groups == groupList[g2]], na.rm = T))
       }
     }
   }
