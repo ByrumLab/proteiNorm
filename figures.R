@@ -6,7 +6,7 @@ i = "Cyclic Loess"
 groups <- meta$Group
 batch <- meta$Batch
 if(meta$Custom.Sample.Name[1] == ""){
-  sampleLabels = meta$Peptide.Sample.Names
+  sampleLabels = meta$Protein.Sample.Names
 } else {
   sampleLabels = meta$Custom.Sample.Names
 }
@@ -20,12 +20,13 @@ mtext(side = 2, text = "Total Intensity", line = 6, cex = 1.5)
 abline(h = max(colSums(normList[[i]], na.rm = T)), lty = 2)
 dev.off()
 
+
 pdf("figures/pca.pdf", width = 7, height = 5)
 data = normList[[i]]
 data = data[!apply(is.na(data), 1, any),]
 pca = stats::prcomp(t(data))
 if(meta$Custom.Sample.Name[1] == ""){
-  rownames(meta) = meta$Peptide.Sample.Names
+  rownames(meta) = meta$Protein.Sample.Names
 } else {
   rownames(meta) = meta$Custom.Sample.Names
 }
