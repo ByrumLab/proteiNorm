@@ -64,7 +64,7 @@ controlsDAtest <-
                                    inline   = FALSE))) 
 
 controlsRmSamples <-
-  list(h3("Samples to be removed:"), 
+  list(h3("Samples:"), 
        tags$div(align = 'left', 
                 class = 'multicol', 
                 checkboxGroupInput(inputId  = "sampleCheckbox", 
@@ -362,7 +362,13 @@ server <- function(input, output, session) {
     meta = metaData2()
     
     updateCheckboxGroupInput(session, inputId = "sampleCheckbox",
-                             choices = #c("1","2","3")
+                             choices = 
+                               if(meta$Custom.Sample.Name[1] == ""){
+                                 meta$Protein.Sample.Names
+                               } else {
+                                 meta$Custom.Sample.Names
+                               },
+                             selected = 
                                if(meta$Custom.Sample.Name[1] == ""){
                                  meta$Protein.Sample.Names
                                } else {
@@ -378,9 +384,9 @@ server <- function(input, output, session) {
     meta = metaData2()
     
     if(meta$Custom.Sample.Name[1] == ""){
-      groups = unique(meta$Group[!meta$Protein.Sample.Names %in% input$sampleCheckbox])
+      groups = unique(meta$Group[meta$Protein.Sample.Names %in% input$sampleCheckbox])
     } else {
-      groups = unique(meta$Group[!meta$Custom.Sample.Names %in% input$sampleCheckbox])
+      groups = unique(meta$Group[meta$Custom.Sample.Names %in% input$sampleCheckbox])
     }
     updateCheckboxGroupInput(session, inputId = "groupSelection", 
                              choices = groups,
@@ -395,9 +401,9 @@ server <- function(input, output, session) {
     peptides = peptides()
     meta = metaData2()
     if(meta$Custom.Sample.Name[1] == ""){
-      filteredPeptides = peptides[,c(rep(TRUE, length(peptideAnnotationColums)), !meta$Protein.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep annotation
+      filteredPeptides = peptides[,c(rep(TRUE, length(peptideAnnotationColums)), meta$Protein.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep annotation
     } else {
-      filteredPeptides = peptides[,c(rep(TRUE, length(peptideAnnotationColums)), !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
+      filteredPeptides = peptides[,c(rep(TRUE, length(peptideAnnotationColums)), meta$Custom.Sample.Names %in% input$sampleCheckbox)]
     }
     filteredPeptides[filteredPeptides == 0] = NA
     filteredPeptides
@@ -410,9 +416,9 @@ server <- function(input, output, session) {
     proteins = proteins()
     meta = metaData2()
     if(meta$Custom.Sample.Name[1] == ""){
-      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), !meta$Protein.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep annotation
+      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), meta$Protein.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep annotation
     } else {
-      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), !meta$Custom.Sample.Names %in% input$sampleCheckbox)]
+      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), meta$Custom.Sample.Names %in% input$sampleCheckbox)]
     }
     selectData = !colnames(filteredProteins) %in% proteinAnnotationColums
     filteredProteins[,selectData][filteredProteins[,selectData] == 0] = NA
@@ -425,9 +431,9 @@ server <- function(input, output, session) {
     req(input$metaData)
     meta = metaData2()
     if(meta$Custom.Sample.Name[1] == ""){
-      filteredMetadata = meta[!meta$Protein.Sample.Names %in% input$sampleCheckbox,]
+      filteredMetadata = meta[meta$Protein.Sample.Names %in% input$sampleCheckbox,]
     } else {
-      filteredMetadata = meta[!meta$Custom.Sample.Names %in% input$sampleCheckbox,]
+      filteredMetadata = meta[meta$Custom.Sample.Names %in% input$sampleCheckbox,]
     }
     filteredMetadata
   })

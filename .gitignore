@@ -2,3 +2,9 @@
 data/peptides.txt
 data/proteinGroups_normalized.txt
 data/~$meta.xlsx
+data/Nucleus Accumbens/Nucleus Accumbens/peptides.txt
+data/Nucleus Accumbens/Nucleus Accumbens/proteinGroups.txt
+data/Nucleus Accumbens/Nucleus Accumbens/proteinGroups_filtered.txt
+data/Striatum/peptides.txt
+data/Striatum/proteinGroups.txt
+data/Striatum/proteinGroups_filtered.txt
