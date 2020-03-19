@@ -16,16 +16,17 @@ library(parallel) # detect cores
 library(rJava) # finding screen resolution
 library(ggfortify) # PCA autoplot
 library(NormalyzerDE) # PCA autoplot
+library(bit64) # handle large intensities
 
 
 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 source("normFunctions.R")
 source("functions.R")
 
 # Sets maximum upload size to 5GB
 options(shiny.maxRequestSize = 5000*1024^2)
 options(stringsAsFactors=FALSE)
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # finding screen resolution
 .jinit()
@@ -34,7 +35,6 @@ default_toolkit <- .jrcall(toolkit, "getDefaultToolkit")
 screenDim <- .jrcall(default_toolkit, "getScreenSize")
 screenHeight <- .jcall(screenDim, "D", "getHeight")
 screenWidth <- .jcall(screenDim, "D", "getWidth")
-
 
 tweaks <- 
   list(tags$head(tags$style(HTML("
@@ -329,6 +329,8 @@ server <- function(input, output, session) {
     tmpRawData = data.frame(fread(protFile$datapath))
     tmpData = extractProteinData(rawData = tmpRawData, proteinAnnotationColums = proteinAnnotationColums)
     cat(ifelse(tmpData[["isTMT"]], "Proteins: TMT detected\n", "Proteins: Label-Free detected\n"))
+    tmp = tmpData[["data"]]
+    save(tmp, file = "rawDataDIA.Rdata")
     tmpData[["data"]]
   })
   
@@ -422,7 +424,10 @@ server <- function(input, output, session) {
     }
     selectData = !colnames(filteredProteins) %in% proteinAnnotationColums
     filteredProteins[,selectData][filteredProteins[,selectData] == 0] = NA
-    filteredProteins
+    # filteredProteins
+    tmp = data.frame(filteredProteins[,seq_along(proteinAnnotationColums)], apply(filteredProteins[,-seq_along(proteinAnnotationColums)], 2, bit64::as.double.integer64))
+    colnames(tmp)[seq_along(proteinAnnotationColums)] = proteinAnnotationColums
+    tmp
   })
   
   metaDataFiltered <- reactive({
@@ -780,6 +785,7 @@ server <- function(input, output, session) {
     volumes <- c("UserFolder" = getwd())
     shinyFileSave(input, "saveNormProtein", roots=volumes, session=session)
     fileinfo <- parseSavePath(volumes, input$saveNormProtein)
+
     if (nrow(fileinfo) > 0) {
       normList <- normProteins()
       meta <- metaDataFiltered()
