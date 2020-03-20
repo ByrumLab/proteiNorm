@@ -424,10 +424,19 @@ server <- function(input, output, session) {
     }
     selectData = !colnames(filteredProteins) %in% proteinAnnotationColums
     filteredProteins[,selectData][filteredProteins[,selectData] == 0] = NA
-    # filteredProteins
-    tmp = data.frame(filteredProteins[,seq_along(proteinAnnotationColums)], apply(filteredProteins[,-seq_along(proteinAnnotationColums)], 2, bit64::as.double.integer64))
-    colnames(tmp)[seq_along(proteinAnnotationColums)] = proteinAnnotationColums
-    tmp
+
+    save(filteredProteins, file = "filteredProteins.Rdata")
+    if(is.integer64(filteredProteins[1, length(proteinAnnotationColums)+1])){
+      print("64")
+      tmp = data.frame(filteredProteins[,seq_along(proteinAnnotationColums)], apply(filteredProteins[,-seq_along(proteinAnnotationColums)], 2, bit64::as.double.integer64))
+      colnames(tmp)[seq_along(proteinAnnotationColums)] = proteinAnnotationColums
+      return(tmp)
+    } else if(is.numeric(filteredProteins[1, length(proteinAnnotationColums)+1])){
+      print("num")
+      return(filteredProteins)
+    } else {
+      stop("Unknown data class")
+    }
   })
   
   metaDataFiltered <- reactive({
