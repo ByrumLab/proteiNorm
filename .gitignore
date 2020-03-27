@@ -9,3 +9,4 @@ data/Striatum/peptides.txt
 data/Striatum/proteinGroups.txt
 data/Striatum/proteinGroups_filtered.txt
 .Rhistory
+savedData.Rdata

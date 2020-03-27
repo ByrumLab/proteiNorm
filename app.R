@@ -330,7 +330,6 @@ server <- function(input, output, session) {
     tmpData = extractProteinData(rawData = tmpRawData, proteinAnnotationColums = proteinAnnotationColums)
     cat(ifelse(tmpData[["isTMT"]], "Proteins: TMT detected\n", "Proteins: Label-Free detected\n"))
     tmp = tmpData[["data"]]
-    save(tmp, file = "rawDataDIA.Rdata")
     tmpData[["data"]]
   })
   
@@ -425,14 +424,12 @@ server <- function(input, output, session) {
     selectData = !colnames(filteredProteins) %in% proteinAnnotationColums
     filteredProteins[,selectData][filteredProteins[,selectData] == 0] = NA
 
-    save(filteredProteins, file = "filteredProteins.Rdata")
     if(is.integer64(filteredProteins[1, length(proteinAnnotationColums)+1])){
       print("64")
       tmp = data.frame(filteredProteins[,seq_along(proteinAnnotationColums)], apply(filteredProteins[,-seq_along(proteinAnnotationColums)], 2, bit64::as.double.integer64))
       colnames(tmp)[seq_along(proteinAnnotationColums)] = proteinAnnotationColums
       return(tmp)
     } else if(is.numeric(filteredProteins[1, length(proteinAnnotationColums)+1])){
-      print("num")
       return(filteredProteins)
     } else {
       stop("Unknown data class")
@@ -645,7 +642,10 @@ server <- function(input, output, session) {
     meta <- metaDataFiltered()
     
     if(is.null(normList) | is.null(meta)) return(NULL)
-    # save(normList, meta, file = "savedData.Rdata")
+    
+    # peptides <- peptidesSampleFiltered()
+    # proteins <- proteinsSampleFiltered()
+    # save(peptides, proteins, normList, meta, file = "savedData.Rdata")
     
     if(meta$Custom.Sample.Name[1] == ""){
       sampleLabels = meta$Protein.Sample.Names
