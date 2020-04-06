@@ -152,6 +152,8 @@ body <- dashboardBody(
         ) 
       ),
       
+      numericInput(inputId = "minSamplesPerXGroup", label = "Minimum number of samples with measurement in Y groups", value = 0, min = 0, step = 1),
+      numericInput(inputId = "YGroup", label = "Number of Y groups", value = 0, min = 0, step = 1),
       
       tweaks,
       fluidRow(column(width = 4, controlsRmSamples))
@@ -375,6 +377,7 @@ server <- function(input, output, session) {
                                } else {
                                  meta$Custom.Sample.Names
                                })
+    updateNumericInput(session, inputId = "YGroup", value = length(unique(meta$Group)), max = length(unique(meta$Group)))
   })
   
   observe({
@@ -423,6 +426,15 @@ server <- function(input, output, session) {
     }
     selectData = !colnames(filteredProteins) %in% proteinAnnotationColums
     filteredProteins[,selectData][filteredProteins[,selectData] == 0] = NA
+    
+    # filtering proteins with at least X protein measurements in Y groups 
+    tmp = filteredProteins[,-seq_along(proteinAnnotationColums)]
+    numberOfSamplesPerGroup = NULL
+    for(group in unique(meta$Group)){
+      numberOfSamplesPerGroup = cbind(numberOfSamplesPerGroup, apply(tmp[, meta$Group %in% group], 1, FUN = function(x) sum(!is.na(x))))
+    }
+    colnames(numberOfSamplesPerGroup) = unique(meta$Group)
+    filteredProteins = filteredProteins[apply(numberOfSamplesPerGroup, 1, FUN = function(x) sum(x >= input$minSamplesPerXGroup)) >= input$YGroup, ] # at least X samples in at least Y groups
 
     if(is.integer64(filteredProteins[1, length(proteinAnnotationColums)+1])){
       print("64")
@@ -829,6 +841,8 @@ server <- function(input, output, session) {
     
     groups <- meta$Group
     batch <- meta$Batch
+    
+    # save(norm=List, meta, normData, file = "DAtest.Rdata")
     
     cat("Excluding: ", DAtestTestNames[DAtestTests[as.numeric(input$checkboxDAtestTests)]], "\n")
     DAtestResults = if(input$imputationMethod == "No Imputation"){
