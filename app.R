@@ -171,6 +171,10 @@ body <- dashboardBody(
       tabName = "norm",
       
       h2("Proteins"), # cleanProteins()
+      
+      actionButton(inputId = "saveFigures", label = "Save Figures"),
+      
+      
       fluidRow(
         tabBox(
           id = "normalizationTab",
@@ -377,7 +381,6 @@ server <- function(input, output, session) {
                                } else {
                                  meta$Custom.Sample.Names
                                })
-    updateNumericInput(session, inputId = "YGroup", value = length(unique(meta$Group)), max = length(unique(meta$Group)))
   })
   
   observe({
@@ -395,6 +398,13 @@ server <- function(input, output, session) {
     updateCheckboxGroupInput(session, inputId = "groupSelection", 
                              choices = groups,
                              selected = c(groups[1],groups[2]))
+    
+    if(meta$Custom.Sample.Name[1] == ""){
+      selected = meta$Protein.Sample.Names %in% input$sampleCheckbox
+    } else {
+      selected = meta$Custom.Sample.Names %in% input$sampleCheckbox
+    }
+    updateNumericInput(session, inputId = "YGroup", value = length(unique(meta[selected,]$Group)), max = length(unique(meta[selected,]$Group)))
   })
   
   
@@ -420,20 +430,25 @@ server <- function(input, output, session) {
     proteins = proteins()
     meta = metaData2()
     if(meta$Custom.Sample.Name[1] == ""){
-      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), meta$Protein.Sample.Names %in% input$sampleCheckbox)] # TRUE to keep annotation
+      selected = meta$Protein.Sample.Names %in% input$sampleCheckbox
+      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), selected)] # TRUE to keep annotation
     } else {
-      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), meta$Custom.Sample.Names %in% input$sampleCheckbox)]
+      selected = meta$Custom.Sample.Names %in% input$sampleCheckbox
+      filteredProteins = proteins[,c(rep(TRUE, length(proteinAnnotationColums)), selected)]
     }
     selectData = !colnames(filteredProteins) %in% proteinAnnotationColums
     filteredProteins[,selectData][filteredProteins[,selectData] == 0] = NA
     
     # filtering proteins with at least X protein measurements in Y groups 
+    myGroups =  unique(meta[selected,]$Group)
     tmp = filteredProteins[,-seq_along(proteinAnnotationColums)]
     numberOfSamplesPerGroup = NULL
-    for(group in unique(meta$Group)){
-      numberOfSamplesPerGroup = cbind(numberOfSamplesPerGroup, apply(tmp[, meta$Group %in% group], 1, FUN = function(x) sum(!is.na(x))))
+    for(group in myGroups){
+      dat = tmp[, meta[selected,]$Group %in% group]
+      if(is.numeric(dat)) dat = as.data.frame(dat)
+      numberOfSamplesPerGroup = cbind(numberOfSamplesPerGroup, apply(dat, 1, FUN = function(x) sum(!is.na(x))))
     }
-    colnames(numberOfSamplesPerGroup) = unique(meta$Group)
+    # colnames(numberOfSamplesPerGroup) = unique(meta$Group[meta$Protein.Sample.Names %in% input$sampleCheckbox])
     filteredProteins = filteredProteins[apply(numberOfSamplesPerGroup, 1, FUN = function(x) sum(x >= input$minSamplesPerXGroup)) >= input$YGroup, ] # at least X samples in at least Y groups
 
     if(is.integer64(filteredProteins[1, length(proteinAnnotationColums)+1])){
@@ -470,20 +485,8 @@ server <- function(input, output, session) {
     meta <- metaDataFiltered()
     
     if(is.null(proteins) | is.null(meta)) return(NULL)
-    
-    sampleCols = meta$Protein.Sample.Names
-    if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Protein.Sample.Names
-    } else {
-      sampleLabels = meta$Custom.Sample.Names
-    }
-    par(mar=c(11,5,4,2))
-    boxplot(proteins[, sampleCols], outline=FALSE, col=colorGroup(meta$Group)[meta$Group], main="Boxplot of Proteins",
-            xlab="", ylab="", names=sampleLabels, las = 2)
-    mtext(side = 2, text = "Intensity", line = 4)
-    legend("top", inset=c(0, -.14), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
-           col=colorGroup(meta$Group), pch=15, horiz=TRUE)
-  })
+    plotBoxplotProtein(proteins, meta)
+    })
   
   # Boxplot Peptides
   output$filtPeptBoxplot <- renderPlot({
@@ -491,19 +494,8 @@ server <- function(input, output, session) {
     meta <- metaDataFiltered()
     
     if(is.null(peptides) | is.null(meta)) return(NULL)
-    
-    sampleCols = meta$Protein.Sample.Names
-    if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Protein.Sample.Names
-    } else {
-      sampleLabels = meta$Custom.Sample.Names
-    }
-    par(mar=c(11,5,4,2))
-    boxplot(peptides[, sampleCols], outline=FALSE, col=colorGroup(meta$Group)[meta$Group], main="Boxplot of Peptides",
-            xlab="", ylab="", names=sampleLabels, las = 2)
-    mtext(side = 2, text = "Corrected Intensity", line = 4)
-    legend("top", inset=c(0, -.14), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
-           col=colorGroup(meta$Group), pch=15, horiz=TRUE)
+    plotBoxplotPeptide(peptides, meta)
+
   })
   
   # Histogram Proteins
@@ -512,14 +504,7 @@ server <- function(input, output, session) {
     meta <- metaDataFiltered()
     
     if(is.null(proteins) | is.null(meta)) return(NULL)
-    
-    sampleCols = meta$Protein.Sample.Names
-    longdat <- unlist(proteins[, sampleCols])
-    densityCutoff <- findDensityCutoff(longdat)
-    longdat <- longdat[longdat < densityCutoff]
-    breakSeq <- seq(max(min(longdat, na.rm=TRUE), 0), max(c(longdat, densityCutoff), na.rm = TRUE),
-                    length.out=31)
-    hist(longdat, main="Histogram of Proteins", breaks=breakSeq, xlab="Corrected Intensity", ylab="Counts")
+    plotHistogramProtein(proteins, meta)
   })
   
   # Histogram Peptides
@@ -528,14 +513,7 @@ server <- function(input, output, session) {
     meta <- metaDataFiltered()
     
     if(is.null(peptides) | is.null(meta)) return(NULL)
-    
-    sampleCols = meta$Protein.Sample.Names
-    longdat <- unlist(peptides[, sampleCols])
-    densityCutoff <- findDensityCutoff(longdat)
-    longdat <- longdat[longdat < densityCutoff]
-    breakSeq <- seq(max(min(longdat, na.rm=TRUE), 0), max(c(longdat, densityCutoff), na.rm = TRUE),
-                    length.out=31)
-    hist(longdat, main="Histogram of Peptides", breaks=breakSeq, xlab="Corrected Intensity", ylab="Counts")
+    plotHistogramPeptide(peptides, meta)
   })
   
   # PCA Proteins
@@ -544,18 +522,7 @@ server <- function(input, output, session) {
     meta <- metaDataFiltered()
     
     if(is.null(proteins) | is.null(meta)) return(NULL)
-    
-    data = proteins[, meta$Protein.Sample.Names]
-    data = data[!apply(is.na(data), 1, any),]
-    pca = stats::prcomp(t(data))
-    
-    if(meta$Custom.Sample.Name[1] == ""){
-      rownames(meta) = meta$Protein.Sample.Names
-    } else {
-      rownames(meta) = meta$Custom.Sample.Names
-    }
-    
-    ggplot2::autoplot(pca, data = meta, colour = input$protPCAColor, x = 1, y = 2, label  = TRUE)
+    plotPCAProtein(proteins, meta, col = input$protPCAColor)
   })
   
   # PCA Peptides
@@ -564,17 +531,7 @@ server <- function(input, output, session) {
     meta <- metaDataFiltered()
     
     if(is.null(peptides) | is.null(meta)) return(NULL)
-    
-    data = peptides[, meta$Protein.Sample.Names]
-    data = data[!apply(is.na(data), 1, any),]
-    pca = stats::prcomp(t(data))
-    
-    if(meta$Custom.Sample.Name[1] == ""){
-      rownames(meta) = meta$Protein.Sample.Names
-    } else {
-      rownames(meta) = meta$Custom.Sample.Names
-    }
-    ggplot2::autoplot(pca, data = meta, colour = input$peptPCAColor, x = 1, y = 2, label  = TRUE)    
+    plotPCAPeptide(peptides, meta, col = input$peptPCAColor)
   })
   
   
@@ -659,148 +616,69 @@ server <- function(input, output, session) {
     # proteins <- proteinsSampleFiltered()
     # save(peptides, proteins, normList, meta, file = "savedData.Rdata")
     
-    if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Protein.Sample.Names
-    } else {
-      sampleLabels = meta$Custom.Sample.Names
-    }
-    
-    par(mfrow = c(3,3), mar=c(10,8,3,1))
-    for(i in names(normList)){
-      barplot(colSums(normList[[i]], na.rm = T), main = i, las = 2, yaxt="n", cex.main = 1.5, col = plasma(ncol(normList[[i]])), names.arg = sampleLabels)
-      axis(side = 2, cex.axis=1.5, las = 2)
-      # axis(side = 1, at = seq_along(colnames(normList[[i]])), labels = colnames(normList[[i]]), cex.axis=1.5, las = 2)
-      if(i == "VSN") mtext(side = 2, text = "Total Intensity", line = 6, cex = 1.5)
-      abline(h = max(colSums(normList[[i]], na.rm = T)), lty = 2)
-    }
+    plotTotInten(normList, meta)
   }, height = round(0.6 * screenHeight))
+  
   
   output$pcaPlot <- renderPlot({
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
-    
-    data = normList[[input$normMethodPCA]]
-    data = data[!apply(is.na(data), 1, any),]
-    pca = stats::prcomp(t(data))
-    if(meta$Custom.Sample.Name[1] == ""){
-      rownames(meta) = meta$Protein.Sample.Names
-    } else {
-      rownames(meta) = meta$Custom.Sample.Names
-    }
-    ggplot2::autoplot(pca, data = meta, colour = input$groupBatchPCA, x = 1, y = 2, label  = TRUE)
+    plotPCA(normList, meta, method = input$normMethodPCA, col = input$groupBatchPCA)
   }, height = round(0.5 * screenHeight))
+  
   
   output$PCV_boxplot <- renderPlot({
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
-    
-    groups <- meta$Group
-    batch <- meta$Batch
-    
-    par(mar=c(10,6,3,1))
-    plotData = lapply(normList, function(x) PCV(x, groups))
-    boxplot(plotData, main = "PCV", las = 2, border = rainbow(length(normList)), boxlwd = 2, yaxt="n", xaxt="n", cex.main = 1.5)
-    axis(2,cex.axis=1.5, las = 2)
-    axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
-    mtext(side = 2, text = "Pooled Coefficient of Variation", line = 4.5, cex = 1.5)
-    points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
+    plotPCV(normList, meta)
   }, height = round(0.6 * screenHeight))
   
   output$PMAD_boxplot <- renderPlot({
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
-    
-    groups <- meta$Group
-    batch <- meta$Batch
-    
-    
-    par(mar=c(10,6,3,1))
-    plotData = lapply(normList, function(x) PMAD(x, groups))
-    boxplot(plotData, main = "PMAD", las = 2, border = rainbow(length(normList)), boxlwd = 2, yaxt="n", xaxt="n", cex.main = 1.5)
-    axis(2,cex.axis=1.5, las = 2)
-    axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
-    mtext(side = 2, text = "Median Absolute Deviation", line = 4.5, cex = 1.5)
-    points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
+    plotPMAD(normList, meta)
   }, height = round(0.6 * screenHeight))
+  
   
   output$PEV_boxplot <- renderPlot({
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
-    
-    groups <- meta$Group
-    batch <- meta$Batch
-    
-    par(mar=c(10,6,3,1))
-    plotData = lapply(normList, function(x) PEV(x, groups))
-    boxplot(plotData, main = "PEV", las = 2, border = rainbow(length(normList)), boxlwd = 2, yaxt="n", xaxt="n", cex.main = 1.5)
-    axis(2,cex.axis=1.5, las = 2)
-    axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
-    mtext(side = 2, text = "Pooled Estimate of Variance", line = 4.5, cex = 1.5)
-    points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
+    plotPEV(normList, meta)
   }, height = round(0.6 * screenHeight))
   
   output$cor_boxplolt <- renderPlot({
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
-    
-    groups <- meta$Group
-    batch <- meta$Batch
-    
-    par(mar=c(10,6,3,1))
-    plotData = lapply(normList, function(x) unlist(COR(x, groups)))
-    boxplot(plotData, main = "Cor", las = 2, border = rainbow(length(normList)), boxlwd = 2, yaxt="n", xaxt="n", cex.main = 1.5)
-    axis(side = 2,cex.axis=1.5, las = 2)
-    axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
-    mtext(side = 2, text = "Intragroup Correlation", line = 4.5, cex = 1.5)
-    points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
+    plotCOR(normList, meta)
   }, height = round(0.6 * screenHeight))
   
   output$NA_heatmap <- renderPlot({
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
-    groups <- meta$Group
-    batch <- meta$Batch
-    
-    if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Protein.Sample.Names
-    } else {
-      sampleLabels = meta$Custom.Sample.Names
-    }
-    heatmapMissing(normList[["Log2"]], groups, batch, sampleLabels, input$showAllProtein_NA_heatmap)
+    plotNaHM(normList, meta, show = input$showAllProtein_NA_heatmap)
   }, height = round(0.7 * screenHeight))
   
   output$cor_heatmap <- renderPlot({
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
-    
-    groups <- meta$Group
-    batch <- meta$Batch
-    
-    if(meta$Custom.Sample.Name[1] == ""){
-      sampleLabels = meta$Protein.Sample.Names
-    } else {
-      sampleLabels = meta$Custom.Sample.Names
-    }
-    
-    heatmapCorr(normList[[input$normMethodCorrelationHeatmap]], groups, batch, sampleLabels)
+    plotCorHM(normList, meta, method = input$normMethodCorrelationHeatmap)
   }, height = round(0.6 * screenHeight))
   
+  
   output$logRatio_density <- renderPlot({
-    
     normList <- normProteins()
     meta <- metaDataFiltered()
     if(is.null(normList) | is.null(meta)) return(NULL)
-    groups <- meta$Group
-    
-    densityLog2Ratio(normList, groups)
+    plotLogRatio(normList, meta)
   }, height = round(0.6 * screenHeight))
+  
   
   shiny::observeEvent(input$saveNormProtein,{
     volumes <- c("UserFolder" = getwd())
@@ -892,6 +770,83 @@ server <- function(input, output, session) {
     )
     output$DAtestPowerResults <- renderDT({ summary(DAtestPowerResults) })
     output$DAtestPowerFigure <- renderPlot({ plot(DAtestPowerResults) })
+  })
+  
+  observeEvent(input$saveFigures, {
+
+    # peptides()
+    # peptides <- peptidesSampleFiltered()
+    proteins <- proteinsSampleFiltered()
+    meta <- metaDataFiltered()
+    normList <- normProteins()
+
+    # if(!(is.null(peptides) & is.null(meta))){
+    #   png("BoxplotPeptide.png", width = 960, height = 960)
+    #   plotBoxplotPeptide(peptides, meta)
+    #   dev.off()
+    # 
+    #   png("HistogramPeptide.png", width = 960, height = 960)
+    #   plotHistogramPeptide(peptides, meta)
+    #   dev.off()
+    #   
+    #   png("PCAPeptide.png", width = 960, height = 960)
+    #   plotPCAPeptide(peptides, meta, col = input$peptPCAColor)
+    #   dev.off()
+    # }
+    
+    if(!(is.null(proteins) & is.null(meta))){
+      png("BoxplotProtein.png", width = 960, height = 960)
+      plotBoxplotProtein(proteins, meta)
+      dev.off()
+      
+      png("HistogramProtein.png", width = 960, height = 960)
+      plotHistogramProtein(proteins, meta)
+      dev.off()
+      
+      png("PCAProtein.png", width = 960, height = 960)
+      plotPCAProtein(proteins, meta, col = input$protPCAColor)
+      dev.off()
+    }
+
+
+    
+    if(!(is.null(normList) & is.null(meta))){
+      png("TotalIntensity.png", width = 960, height = 960)
+      plotTotInten(normList, meta)
+      dev.off()
+      
+      png("PCA.png", width = 960, height = 960)
+      plotPCA(normList, meta, method = input$normMethodPCA, col = input$groupBatchPCA)
+      dev.off()
+      
+      png("PCV.png", width = 960, height = 960)
+      plotPCV(normList, meta)
+      dev.off()
+      
+      png("PMAD.png", width = 960, height = 960)
+      plotPMAD(normList, meta)
+      dev.off()
+      
+      png("PEV.png", width = 960, height = 960)
+      plotPEV(normList, meta)
+      dev.off()
+      
+      png("COR.png", width = 960, height = 960)
+      plotCOR(normList, meta)
+      dev.off()
+      
+      png("NA-HM.png", width = 960, height = 960)
+      plotNaHM(normList, meta, show = input$showAllProtein_NA_heatmap)
+      dev.off()
+      
+      png("Cor-HM.png", width = 960, height = 960)
+      plotCorHM(normList, meta, method = input$normMethodCorrelationHeatmap)
+      dev.off()
+      
+      png("LogRatio.png", width = 960, height = 960)
+      plotLogRatio(normList, meta)
+      dev.off()
+    }
   })
 }
 

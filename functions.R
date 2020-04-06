@@ -476,5 +476,209 @@ DAtest = function(normData, groups, batch, imputed, exludedTests, R, cores, effe
 
 
 
+################# figures
+plotBoxplotProtein = function(proteins, meta){
+  sampleCols = meta$Protein.Sample.Names
+  if(meta$Custom.Sample.Name[1] == ""){
+    sampleLabels = meta$Protein.Sample.Names
+  } else {
+    sampleLabels = meta$Custom.Sample.Names
+  }
+  par(mar=c(11,5,4,2))
+  boxplot(proteins[, sampleCols], outline=FALSE, col=colorGroup(meta$Group)[meta$Group], main="Boxplot of Proteins",
+          xlab="", ylab="", names=sampleLabels, las = 2)
+  mtext(side = 2, text = "Intensity", line = 4)
+  legend("top", inset=c(0, -.14), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
+         col=colorGroup(meta$Group), pch=15, horiz=TRUE)
+}
+
+plotBoxplotPeptide = function(peptides, meta){
+  sampleCols = meta$Protein.Sample.Names
+  if(meta$Custom.Sample.Name[1] == ""){
+    sampleLabels = meta$Protein.Sample.Names
+  } else {
+    sampleLabels = meta$Custom.Sample.Names
+  }
+  par(mar=c(11,5,4,2))
+  boxplot(peptides[, sampleCols], outline=FALSE, col=colorGroup(meta$Group)[meta$Group], main="Boxplot of Peptides",
+          xlab="", ylab="", names=sampleLabels, las = 2)
+  mtext(side = 2, text = "Corrected Intensity", line = 4)
+  legend("top", inset=c(0, -.14), levels(as.factor(meta$Group)), bty="n", xpd=TRUE,
+         col=colorGroup(meta$Group), pch=15, horiz=TRUE)
+}
+
+
+plotHistogramProtein = function(proteins, meta){
+  sampleCols = meta$Protein.Sample.Names
+  longdat <- unlist(proteins[, sampleCols])
+  densityCutoff <- findDensityCutoff(longdat)
+  longdat <- longdat[longdat < densityCutoff]
+  breakSeq <- seq(max(min(longdat, na.rm=TRUE), 0), max(c(longdat, densityCutoff), na.rm = TRUE),
+                  length.out=31)
+  hist(longdat, main="Histogram of Proteins", breaks=breakSeq, xlab="Corrected Intensity", ylab="Counts")
+}
+
+plotHistogramPeptide = function(proteins, meta){
+  sampleCols = meta$Protein.Sample.Names
+  longdat <- unlist(peptides[, sampleCols])
+  densityCutoff <- findDensityCutoff(longdat)
+  longdat <- longdat[longdat < densityCutoff]
+  breakSeq <- seq(max(min(longdat, na.rm=TRUE), 0), max(c(longdat, densityCutoff), na.rm = TRUE),
+                  length.out=31)
+  hist(longdat, main="Histogram of Peptides", breaks=breakSeq, xlab="Corrected Intensity", ylab="Counts")
+}
+
+plotPCAProtein = function(proteins, meta, col){
+  data = proteins[, meta$Protein.Sample.Names]
+  data = data[!apply(is.na(data), 1, any),]
+  pca = stats::prcomp(t(data))
+  
+  if(meta$Custom.Sample.Name[1] == ""){
+    rownames(meta) = meta$Protein.Sample.Names
+  } else {
+    rownames(meta) = meta$Custom.Sample.Names
+  }
+  
+  ggplot2::autoplot(pca, data = meta, colour = col, x = 1, y = 2, label  = TRUE)
+}
+
+
+plotPCAPeptide = function(proteins, meta, col){
+  data = peptides[, meta$Protein.Sample.Names]
+  data = data[!apply(is.na(data), 1, any),]
+  pca = stats::prcomp(t(data))
+  
+  if(meta$Custom.Sample.Name[1] == ""){
+    rownames(meta) = meta$Protein.Sample.Names
+  } else {
+    rownames(meta) = meta$Custom.Sample.Names
+  }
+  ggplot2::autoplot(pca, data = meta, colour = col, x = 1, y = 2, label  = TRUE)  
+}
+
+
+plotTotInten = function(normList, meta){
+  if(meta$Custom.Sample.Name[1] == ""){
+    sampleLabels = meta$Protein.Sample.Names
+  } else {
+    sampleLabels = meta$Custom.Sample.Names
+  }
+  
+  par(mfrow = c(3,3), mar=c(10,8,3,1))
+  for(i in names(normList)){
+    barplot(colSums(normList[[i]], na.rm = T), main = i, las = 2, yaxt="n", cex.main = 1.5, col = plasma(ncol(normList[[i]])), names.arg = sampleLabels)
+    axis(side = 2, cex.axis=1.5, las = 2)
+    # axis(side = 1, at = seq_along(colnames(normList[[i]])), labels = colnames(normList[[i]]), cex.axis=1.5, las = 2)
+    if(i == "VSN") mtext(side = 2, text = "Total Intensity", line = 6, cex = 1.5)
+    abline(h = max(colSums(normList[[i]], na.rm = T)), lty = 2)
+  }
+}
+
+plotPCA = function(normList, meta, method, col){
+  data = normList[[method]]
+  data = data[!apply(is.na(data), 1, any),]
+  pca = stats::prcomp(t(data))
+  if(meta$Custom.Sample.Name[1] == ""){
+    rownames(meta) = meta$Protein.Sample.Names
+  } else {
+    rownames(meta) = meta$Custom.Sample.Names
+  }
+  ggplot2::autoplot(pca, data = meta, colour = col, x = 1, y = 2, label  = TRUE)
+}
+
+
+plotPCV = function(normList, meta){
+  groups <- meta$Group
+  batch <- meta$Batch
+  
+  par(mar=c(10,6,3,1))
+  plotData = lapply(normList, function(x) PCV(x, groups))
+  boxplot(plotData, main = "PCV", las = 2, border = rainbow(length(normList)), boxlwd = 2, yaxt="n", xaxt="n", cex.main = 1.5)
+  axis(2,cex.axis=1.5, las = 2)
+  axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
+  mtext(side = 2, text = "Pooled Coefficient of Variation", line = 4.5, cex = 1.5)
+  points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
+}
+
+plotPMAD = function(normList, meta){
+  groups <- meta$Group
+  batch <- meta$Batch
+  
+  par(mar=c(10,6,3,1))
+  plotData = lapply(normList, function(x) PMAD(x, groups))
+  boxplot(plotData, main = "PMAD", las = 2, border = rainbow(length(normList)), boxlwd = 2, yaxt="n", xaxt="n", cex.main = 1.5)
+  axis(2,cex.axis=1.5, las = 2)
+  axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
+  mtext(side = 2, text = "Median Absolute Deviation", line = 4.5, cex = 1.5)
+  points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
+}
+
+
+plotPEV = function(normList, meta){
+  groups <- meta$Group
+  batch <- meta$Batch
+  
+  par(mar=c(10,6,3,1))
+  plotData = lapply(normList, function(x) PEV(x, groups))
+  boxplot(plotData, main = "PEV", las = 2, border = rainbow(length(normList)), boxlwd = 2, yaxt="n", xaxt="n", cex.main = 1.5)
+  axis(2,cex.axis=1.5, las = 2)
+  axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
+  mtext(side = 2, text = "Pooled Estimate of Variance", line = 4.5, cex = 1.5)
+  points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
+}
+
+
+plotCOR = function(normList, meta){
+  groups <- meta$Group
+  batch <- meta$Batch
+  
+  par(mar=c(10,6,3,1))
+  plotData = lapply(normList, function(x) unlist(COR(x, groups)))
+  boxplot(plotData, main = "Cor", las = 2, border = rainbow(length(normList)), boxlwd = 2, yaxt="n", xaxt="n", cex.main = 1.5)
+  axis(side = 2,cex.axis=1.5, las = 2)
+  axis(side = 1, at = seq_along(names(normList)), labels = names(normList), cex.axis=1.5, las = 2)
+  mtext(side = 2, text = "Intragroup Correlation", line = 4.5, cex = 1.5)
+  points(rep(seq_along(normList), each = length(plotData[[1]])), unlist(plotData), pch = "*", cex = 1.3)
+}
+
+
+plotNaHM = function(normList, meta, show){
+  groups <- meta$Group
+  batch <- meta$Batch
+  
+  if(meta$Custom.Sample.Name[1] == ""){
+    sampleLabels = meta$Protein.Sample.Names
+  } else {
+    sampleLabels = meta$Custom.Sample.Names
+  }
+  heatmapMissing(normList[["Log2"]], groups, batch, sampleLabels, show)
+}
+
+
+plotCorHM = function(normList, meta, method){
+  groups <- meta$Group
+  batch <- meta$Batch
+  
+  if(meta$Custom.Sample.Name[1] == ""){
+    sampleLabels = meta$Protein.Sample.Names
+  } else {
+    sampleLabels = meta$Custom.Sample.Names
+  }
+  
+  heatmapCorr(normList[[method]], groups, batch, sampleLabels)
+}
+
+
+plotLogRatio = function(normList, meta){
+  groups <- meta$Group
+  densityLog2Ratio(normList, groups)
+}
+
+
+
+
+
+
+
 
 
