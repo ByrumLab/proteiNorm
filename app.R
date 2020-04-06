@@ -404,6 +404,7 @@ server <- function(input, output, session) {
     } else {
       selected = meta$Custom.Sample.Names %in% input$sampleCheckbox
     }
+    updateNumericInput(session, inputId = "minSamplesPerXGroup", max = min(table(meta[selected,]$Group)))
     updateNumericInput(session, inputId = "YGroup", value = length(unique(meta[selected,]$Group)), max = length(unique(meta[selected,]$Group)))
   })
   
@@ -773,28 +774,28 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$saveFigures, {
-
-    # peptides()
-    # peptides <- peptidesSampleFiltered()
+    peptides <- peptides()
     proteins <- proteinsSampleFiltered()
     meta <- metaDataFiltered()
     normList <- normProteins()
 
-    # if(!(is.null(peptides) & is.null(meta))){
-    #   png("BoxplotPeptide.png", width = 960, height = 960)
-    #   plotBoxplotPeptide(peptides, meta)
-    #   dev.off()
-    # 
-    #   png("HistogramPeptide.png", width = 960, height = 960)
-    #   plotHistogramPeptide(peptides, meta)
-    #   dev.off()
-    #   
-    #   png("PCAPeptide.png", width = 960, height = 960)
-    #   plotPCAPeptide(peptides, meta, col = input$peptPCAColor)
-    #   dev.off()
-    # }
+    if(!is.null(peptides) & !is.null(meta)){
+      print("check")
+      peptides <- peptidesSampleFiltered()
+      png("BoxplotPeptide.png", width = 960, height = 960)
+      plotBoxplotPeptide(peptides, meta)
+      dev.off()
+
+      png("HistogramPeptide.png", width = 960, height = 960)
+      plotHistogramPeptide(peptides, meta)
+      dev.off()
+
+      png("PCAPeptide.png", width = 960, height = 960)
+      plotPCAPeptide(peptides, meta, col = input$peptPCAColor)
+      dev.off()
+    }
     
-    if(!(is.null(proteins) & is.null(meta))){
+    if(!is.null(proteins) & !is.null(meta)){
       png("BoxplotProtein.png", width = 960, height = 960)
       plotBoxplotProtein(proteins, meta)
       dev.off()
@@ -810,7 +811,7 @@ server <- function(input, output, session) {
 
 
     
-    if(!(is.null(normList) & is.null(meta))){
+    if(!is.null(normList) & !is.null(meta)){
       png("TotalIntensity.png", width = 960, height = 960)
       plotTotInten(normList, meta)
       dev.off()
