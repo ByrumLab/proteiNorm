@@ -265,7 +265,8 @@ body <- dashboardBody(
       
       div(DTOutput("DAtestResults"), style = "overflow-y: scroll;overflow-x: scroll;"),
       
-      plotOutput(outputId = "DAtestFigure")
+      plotOutput(outputId = "DAtestFigure"),
+      actionButton(inputId = "saveDAtestFigure", label = "Save DAtest figure")
     ),
     
     # DAtest Power
@@ -280,8 +281,8 @@ body <- dashboardBody(
       
       div(DTOutput("DAtestPowerResults"), style = "overflow-y: scroll;overflow-x: scroll;"),
       
-      plotOutput(outputId = "DAtestPowerFigure")
-      
+      plotOutput(outputId = "DAtestPowerFigure"),
+      actionButton(inputId = "saveDAtestPower", label = "Save DAtest power figure")
     )
   )
 )
@@ -293,9 +294,13 @@ ui <- dashboardPage(header, sidebar, body)
 server <- function(input, output, session) {
   peptideAnnotationColums = c("id", "Protein.group.IDs", "Leading.razor.protein", "Gene.names")
   proteinAnnotationColums = c("id")
-  
+  DAtestResultsGlobal = reactiveValues(test = NULL, power = FALSE)
+
   shinyjs::disable("goButtonDAtest")
   shinyjs::disable("goButtonDAPower")
+  shinyjs::hide("saveDAtestFigure")
+  shinyjs::hide("saveDAtestPower")
+  
   
   peptides <- reactive({
     peptFile <- input$peptFile
@@ -735,6 +740,9 @@ server <- function(input, output, session) {
              R = input$DAtestNumberTests, cores = input$DAtestCores, effectSize = input$DAtestEffectsize)
     }
     
+    DAtestResultsGlobal$test <- DAtestResults
+    shinyjs::show("saveDAtestFigure")
+    
     output$DAtestResults <- renderDT({ summary(DAtestResults) })
     output$DAtestFigure <- renderPlot({ plot(DAtestResults) })
     
@@ -769,6 +777,10 @@ server <- function(input, output, session) {
                                  R = 5 # more than 5 don't work (bug with error)
                                  # R = input$DAtestNumberTests
     )
+    
+    DAtestResultsGlobal$power <- DAtestPowerResults
+    shinyjs::show("saveDAtestPower")
+    
     output$DAtestPowerResults <- renderDT({ summary(DAtestPowerResults) })
     output$DAtestPowerFigure <- renderPlot({ plot(DAtestPowerResults) })
   })
@@ -780,7 +792,6 @@ server <- function(input, output, session) {
     normList <- normProteins()
 
     if(!is.null(peptides) & !is.null(meta)){
-      print("check")
       peptides <- peptidesSampleFiltered()
       png("BoxplotPeptide.png", width = 960, height = 960)
       plotBoxplotPeptide(peptides, meta)
@@ -789,9 +800,10 @@ server <- function(input, output, session) {
       png("HistogramPeptide.png", width = 960, height = 960)
       plotHistogramPeptide(peptides, meta)
       dev.off()
-
+      
+      plotPCAPeptide = plotPCAPeptide(peptides, meta, col = input$peptPCAColor)
       png("PCAPeptide.png", width = 960, height = 960)
-      plotPCAPeptide(peptides, meta, col = input$peptPCAColor)
+      plot(plotPCAPeptide)
       dev.off()
     }
     
@@ -804,8 +816,9 @@ server <- function(input, output, session) {
       plotHistogramProtein(proteins, meta)
       dev.off()
       
+      plotPCAProtein = plotPCAProtein(proteins, meta, col = input$protPCAColor)
       png("PCAProtein.png", width = 960, height = 960)
-      plotPCAProtein(proteins, meta, col = input$protPCAColor)
+      plot(plotPCAProtein)
       dev.off()
     }
 
@@ -816,8 +829,9 @@ server <- function(input, output, session) {
       plotTotInten(normList, meta)
       dev.off()
       
+      plotPCA = plotPCA(normList, meta, method = input$normMethodPCA, col = input$groupBatchPCA)
       png("PCA.png", width = 960, height = 960)
-      plotPCA(normList, meta, method = input$normMethodPCA, col = input$groupBatchPCA)
+      plot(plotPCA)
       dev.off()
       
       png("PCV.png", width = 960, height = 960)
@@ -849,6 +863,24 @@ server <- function(input, output, session) {
       dev.off()
     }
   })
+  
+  observeEvent(input$saveDAtestFigure, {
+    DAplot = DAtestResultsGlobal$test
+    test = plot(DAplot)
+    png("DAtest.png", width = 960, height = 960)
+    plot(test)
+    dev.off()
+  })
+  
+  observeEvent(input$saveDAtestPower, {
+    DAplot = DAtestResultsGlobal$power
+    test = plot(DAplot)
+    png("DAtestPower.png", width = 960, height = 960)
+    plot(test)
+    dev.off()
+  })
+  
+   
 }
 
 # Run the application 
