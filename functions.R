@@ -531,29 +531,85 @@ plotHistogramPeptide = function(proteins, meta){
 plotPCAProtein = function(proteins, meta, col){
   data = proteins[, meta$Protein.Sample.Names]
   data = data[!apply(is.na(data), 1, any),]
-  pca = stats::prcomp(t(data))
+  pca = stats::prcomp(t(data), scale = T)
   
   if(meta$Custom.Sample.Name[1] == ""){
     rownames(meta) = meta$Protein.Sample.Names
   } else {
     rownames(meta) = meta$Custom.Sample.Names
   }
+  # save(pca, data, meta, file = "PCA.Rdata")
   
-  ggplot2::autoplot(pca, data = meta, colour = col, x = 1, y = 2, label  = TRUE)
+  if(col == "Group"){
+    colGroup = colorGroup(meta$Group)
+    colSample = colorGroup(meta$Group)[meta$Group]
+  } else if(col == "Batch"){
+    colGroup = colorBatch(meta$Batch)
+    colSample = colorBatch(meta$Batch)[meta$Batch]
+  }
+  par(mar =  c(5.1, 4.1, 0.1, 0.1))
+  plot(x = pca$x[,"PC1"], 
+       y = pca$x[,"PC2"], 
+       xlab = paste("PC1 (", round(summary(pca)$importance["Proportion of Variance","PC1"] * 100, 2), "%)", sep = ""),
+       ylab = paste("PC2 (", round(summary(pca)$importance["Proportion of Variance","PC2"] * 100, 2), "%)", sep = ""),
+       pch = "*", 
+       col = colSample,
+       xlim = c(min(pca$x[,"PC1"])*1.2, max(pca$x[,"PC1"])*1.4),
+       ylim = c(min(pca$x[,"PC2"])*1.2, max(pca$x[,"PC2"]))
+  )
+  grid() 
+  text(labels = rownames(meta),
+       x = pca$x[,"PC1"],
+       y = pca$x[,"PC2"],
+       col = colSample)
+  legend("bottomright",
+         legend = names(colGroup),
+         title = "Group",
+         pch = "*",
+         col = colGroup,
+         text.col = colGroup)
 }
 
 
-plotPCAPeptide = function(proteins, meta, col){
+plotPCAPeptide = function(peptides, meta, col){
   data = peptides[, meta$Protein.Sample.Names]
   data = data[!apply(is.na(data), 1, any),]
-  pca = stats::prcomp(t(data))
+  pca = stats::prcomp(t(data), scale = T)
   
   if(meta$Custom.Sample.Name[1] == ""){
     rownames(meta) = meta$Protein.Sample.Names
   } else {
     rownames(meta) = meta$Custom.Sample.Names
   }
-  ggplot2::autoplot(pca, data = meta, colour = col, x = 1, y = 2, label  = TRUE)  
+  
+  if(col == "Group"){
+    colGroup = colorGroup(meta$Group)
+    colSample = colorGroup(meta$Group)[meta$Group]
+  } else if(col == "Batch"){
+    colGroup = colorBatch(meta$Batch)
+    colSample = colorBatch(meta$Batch)[meta$Batch]
+  }
+  par(mar =  c(5.1, 4.1, 0.1, 0.1))
+  plot(x = pca$x[,"PC1"], 
+       y = pca$x[,"PC2"], 
+       xlab = paste("PC1 (", round(summary(pca)$importance["Proportion of Variance","PC1"] * 100, 2), "%)", sep = ""),
+       ylab = paste("PC2 (", round(summary(pca)$importance["Proportion of Variance","PC2"] * 100, 2), "%)", sep = ""),
+       pch = "*", 
+       col = colSample,
+       xlim = c(min(pca$x[,"PC1"])*1.2, max(pca$x[,"PC1"])*1.4),
+       ylim = c(min(pca$x[,"PC2"])*1.2, max(pca$x[,"PC2"]))
+  )
+  grid() 
+  text(labels = rownames(meta),
+       x = pca$x[,"PC1"],
+       y = pca$x[,"PC2"],
+       col = colSample)
+  legend("bottomright",
+         legend = names(colGroup),
+         title = "Group",
+         pch = "*",
+         col = colGroup,
+         text.col = colGroup)
 }
 
 
@@ -563,10 +619,15 @@ plotTotInten = function(normList, meta){
   } else {
     sampleLabels = meta$Custom.Sample.Names
   }
-  
+  groups = meta$Group
   par(mfrow = c(3,3), mar=c(10,8,3,1))
   for(i in names(normList)){
-    barplot(colSums(normList[[i]], na.rm = T), main = i, las = 2, yaxt="n", cex.main = 1.5, col = plasma(ncol(normList[[i]])), names.arg = sampleLabels)
+    barplot(colSums(normList[[i]], na.rm = T), 
+            main = i, las = 2, 
+            yaxt="n", 
+            cex.main = 1.5, 
+            col = colorGroup(groups)[groups], #plasma(ncol(normList[[i]])), 
+            names.arg = sampleLabels)
     axis(side = 2, cex.axis=1.5, las = 2)
     # axis(side = 1, at = seq_along(colnames(normList[[i]])), labels = colnames(normList[[i]]), cex.axis=1.5, las = 2)
     if(i == "VSN") mtext(side = 2, text = "Total Intensity", line = 6, cex = 1.5)
@@ -577,13 +638,40 @@ plotTotInten = function(normList, meta){
 plotPCA = function(normList, meta, method, col){
   data = normList[[method]]
   data = data[!apply(is.na(data), 1, any),]
-  pca = stats::prcomp(t(data))
+  pca = stats::prcomp(t(data), scale = T)
   if(meta$Custom.Sample.Name[1] == ""){
     rownames(meta) = meta$Protein.Sample.Names
   } else {
     rownames(meta) = meta$Custom.Sample.Names
   }
-  ggplot2::autoplot(pca, data = meta, colour = col, x = 1, y = 2, label  = TRUE)
+  if(col == "Group"){
+    colGroup = colorGroup(meta$Group)
+    colSample = colorGroup(meta$Group)[meta$Group]
+  } else if(col == "Batch"){
+    colGroup = colorBatch(meta$Batch)
+    colSample = colorBatch(meta$Batch)[meta$Batch]
+  }
+  par(mar =  c(5.1, 4.1, 0.1, 0.1))
+  plot(x = pca$x[,"PC1"], 
+       y = pca$x[,"PC2"], 
+       xlab = paste("PC1 (", round(summary(pca)$importance["Proportion of Variance","PC1"] * 100, 2), "%)", sep = ""),
+       ylab = paste("PC2 (", round(summary(pca)$importance["Proportion of Variance","PC2"] * 100, 2), "%)", sep = ""),
+       pch = "*", 
+       col = colSample,
+       xlim = c(min(pca$x[,"PC1"])*1.2, max(pca$x[,"PC1"])*1.4),
+       ylim = c(min(pca$x[,"PC2"])*1.2, max(pca$x[,"PC2"]))
+  )
+  grid() 
+  text(labels = rownames(meta),
+       x = pca$x[,"PC1"],
+       y = pca$x[,"PC2"],
+       col = colSample)
+  legend("bottomright",
+         legend = names(colGroup),
+         title = "Group",
+         pch = "*",
+         col = colGroup,
+         text.col = colGroup)
 }
 
 

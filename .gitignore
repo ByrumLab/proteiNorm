@@ -11,3 +11,8 @@ data/Striatum/proteinGroups_filtered.txt
 .Rhistory
 savedData.Rdata
 figures.R
+data/breast cancer/peptides.txt
+data/breast cancer/proteinGroups_CycLoess.txt
+data/spike-in/Original Paper.url
+data/spike-in/archive/proteinGroups_iBAQ_INPUT.txt
+data/spike-in/archive/proteinGroups_iBAQ_INPUT_UPSproteins.txt
