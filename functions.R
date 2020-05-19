@@ -518,7 +518,7 @@ plotHistogramProtein = function(proteins, meta){
   hist(longdat, main="Histogram of Proteins", breaks=breakSeq, xlab="Corrected Intensity", ylab="Counts")
 }
 
-plotHistogramPeptide = function(proteins, meta){
+plotHistogramPeptide = function(peptides, meta){
   sampleCols = meta$Protein.Sample.Names
   longdat <- unlist(peptides[, sampleCols])
   densityCutoff <- findDensityCutoff(longdat)
@@ -553,14 +553,16 @@ plotPCAProtein = function(proteins, meta, col){
        xlab = paste("PC1 (", round(summary(pca)$importance["Proportion of Variance","PC1"] * 100, 2), "%)", sep = ""),
        ylab = paste("PC2 (", round(summary(pca)$importance["Proportion of Variance","PC2"] * 100, 2), "%)", sep = ""),
        pch = "*", 
+       cex = 2,
        col = colSample,
-       xlim = c(min(pca$x[,"PC1"])*1.2, max(pca$x[,"PC1"])*1.4),
-       ylim = c(min(pca$x[,"PC2"])*1.2, max(pca$x[,"PC2"]))
+       xlim = c(min(pca$x[,"PC1"])*1.3, max(pca$x[,"PC1"])*1.4),
+       ylim = c(min(pca$x[,"PC2"])*1.2, max(pca$x[,"PC2"])*1.2)
   )
   grid() 
   text(labels = rownames(meta),
        x = pca$x[,"PC1"],
        y = pca$x[,"PC2"],
+       cex = 2,
        col = colSample)
   legend("bottomright",
          legend = names(colGroup),
@@ -595,14 +597,16 @@ plotPCAPeptide = function(peptides, meta, col){
        xlab = paste("PC1 (", round(summary(pca)$importance["Proportion of Variance","PC1"] * 100, 2), "%)", sep = ""),
        ylab = paste("PC2 (", round(summary(pca)$importance["Proportion of Variance","PC2"] * 100, 2), "%)", sep = ""),
        pch = "*", 
+       cex = 2,
        col = colSample,
-       xlim = c(min(pca$x[,"PC1"])*1.2, max(pca$x[,"PC1"])*1.4),
-       ylim = c(min(pca$x[,"PC2"])*1.2, max(pca$x[,"PC2"]))
+       xlim = c(min(pca$x[,"PC1"])*1.3, max(pca$x[,"PC1"])*1.4),
+       ylim = c(min(pca$x[,"PC2"])*1.2, max(pca$x[,"PC2"])*1.2)
   )
   grid() 
   text(labels = rownames(meta),
        x = pca$x[,"PC1"],
        y = pca$x[,"PC2"],
+       cex = 2,
        col = colSample)
   legend("bottomright",
          legend = names(colGroup),
@@ -657,14 +661,16 @@ plotPCA = function(normList, meta, method, col){
        xlab = paste("PC1 (", round(summary(pca)$importance["Proportion of Variance","PC1"] * 100, 2), "%)", sep = ""),
        ylab = paste("PC2 (", round(summary(pca)$importance["Proportion of Variance","PC2"] * 100, 2), "%)", sep = ""),
        pch = "*", 
+       cex = 2,
        col = colSample,
-       xlim = c(min(pca$x[,"PC1"])*1.2, max(pca$x[,"PC1"])*1.4),
-       ylim = c(min(pca$x[,"PC2"])*1.2, max(pca$x[,"PC2"]))
+       xlim = c(min(pca$x[,"PC1"])*1.3, max(pca$x[,"PC1"])*1.4),
+       ylim = c(min(pca$x[,"PC2"])*1.2, max(pca$x[,"PC2"])*1.2)
   )
   grid() 
   text(labels = rownames(meta),
        x = pca$x[,"PC1"],
        y = pca$x[,"PC2"],
+       cex = 2,
        col = colSample)
   legend("bottomright",
          legend = names(colGroup),

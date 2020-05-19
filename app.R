@@ -801,9 +801,8 @@ server <- function(input, output, session) {
       plotHistogramPeptide(peptides, meta)
       dev.off()
       
-      plotPCAPeptide = plotPCAPeptide(peptides, meta, col = input$peptPCAColor)
       png("PCAPeptide.png", width = 960, height = 960)
-      plot(plotPCAPeptide)
+      plotPCAPeptide(peptides, meta, col = input$peptPCAColor)
       dev.off()
     }
     
@@ -816,9 +815,9 @@ server <- function(input, output, session) {
       plotHistogramProtein(proteins, meta)
       dev.off()
       
-      plotPCAProtein = plotPCAProtein(proteins, meta, col = input$protPCAColor)
+      plotPCAProtein = 
       png("PCAProtein.png", width = 960, height = 960)
-      plot(plotPCAProtein)
+      plotPCAProtein(proteins, meta, col = input$protPCAColor)
       dev.off()
     }
 
@@ -829,9 +828,8 @@ server <- function(input, output, session) {
       plotTotInten(normList, meta)
       dev.off()
       
-      plotPCA = plotPCA(normList, meta, method = input$normMethodPCA, col = input$groupBatchPCA)
       png("PCA.png", width = 960, height = 960)
-      plot(plotPCA)
+      plotPCA(normList, meta, method = input$normMethodPCA, col = input$groupBatchPCA)
       dev.off()
       
       png("PCV.png", width = 960, height = 960)
