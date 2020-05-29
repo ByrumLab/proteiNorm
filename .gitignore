@@ -17,3 +17,8 @@ data/spike-in/Original Paper.url
 data/spike-in/archive/proteinGroups_iBAQ_INPUT.txt
 data/spike-in/archive/proteinGroups_iBAQ_INPUT_UPSproteins.txt
 data/meth/~$meta.xlsx
+spiked-in_Spikes.R
+savedData_spiked.Rdata
+savedData_meth.Rdata
+savedData_bccl.Rdata
+data/spike-in/spiked-in_normalized.txt

@@ -726,8 +726,6 @@ server <- function(input, output, session) {
     groups <- meta$Group
     batch <- meta$Batch
     
-    # save(norm=List, meta, normData, file = "DAtest.Rdata")
-    
     cat("Excluding: ", DAtestTestNames[DAtestTests[as.numeric(input$checkboxDAtestTests)]], "\n")
     DAtestResults = if(input$imputationMethod == "No Imputation"){
       DAtest(normData, groups, batch, imputed = FALSE, 
@@ -815,7 +813,6 @@ server <- function(input, output, session) {
       plotHistogramProtein(proteins, meta)
       dev.off()
       
-      plotPCAProtein = 
       png("PCAProtein.png", width = 960, height = 960)
       plotPCAProtein(proteins, meta, col = input$protPCAColor)
       dev.off()
