@@ -1,3 +1,19 @@
+#if (!requireNamespace("devtools")) install.packages("devtools")
+
+# Developmental version (recommended):
+#devtools::install_github("Russel88/DAtest")
+
+# Version associated with bioRxiv paper:
+# devtools::install_github("Russel88/DAtest@v2.7.5")
+
+# if (!require("BiocManager", quietly = TRUE))
+#   install.packages("BiocManager")
+# 
+# BiocManager::install("impute")
+# BiocManager::install("pcaMethods")
+# BiocManager::install("sva")
+# BiocManager::install("NormalyzerDE")
+
 library(shinydashboard)
 library(data.table)
 library(DT)
@@ -29,15 +45,12 @@ options(shiny.maxRequestSize = 5000*1024^2)
 options(stringsAsFactors=FALSE)
 
 # finding screen resolution
-# .jinit()
-# toolkit <- J("java.awt.Toolkit")
-# default_toolkit <- .jrcall(toolkit, "getDefaultToolkit")
-# screenDim <- .jrcall(default_toolkit, "getScreenSize")
-# screenHeight <- .jcall(screenDim, "D", "getHeight")
-# screenWidth <- .jcall(screenDim, "D", "getWidth")
-
-screenHeight <- 800
-screenWidth <- 1000
+.jinit()
+toolkit <- J("java.awt.Toolkit")
+default_toolkit <- .jrcall(toolkit, "getDefaultToolkit")
+screenDim <- .jrcall(default_toolkit, "getScreenSize")
+screenHeight <- .jcall(screenDim, "D", "getHeight")
+screenWidth <- .jcall(screenDim, "D", "getWidth")
 
 tweaks <- 
   list(tags$head(tags$style(HTML("
@@ -54,11 +67,6 @@ tweaks <-
 
 
 DAtestTests = eval(formals(testDA)$tests)
-## added
-DAtestTests <- DAtestTests[DAtestTests %in% names(DAtestTestNames)]
-
-
-
 allChecks <- seq_along(DAtestTests)
 names(allChecks) <- DAtestTestNames[DAtestTests]
 controlsDAtest <-
