@@ -1,5 +1,7 @@
 # proteiNorm
 
+## This tool is now available as part of the proteoDA R package (https://github.com/ByrumLab/proteoDA)
+
 The app has been updated to work with R 4.2.2. Data from both mass spectrometry quantitation methods, Tandem Mass Tag (TMT) and label-free mass spectrometry, are supported.
 
 ## Data Requirements
